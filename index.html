@@ -1,0 +1,2667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STAGELOG">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0c0f">
+<title>STAGELOG — LIGHTING RECORD CUE SHEET SYSTEM</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@300;400;500;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-deep:#0a0c0f; --bg-panel:#0f1217; --bg-card:#141820; --bg-hover:#1a2030;
+  --border:#1e2535; --border-active:#2a3550;
+  --amber:#f5a623; --amber-dim:#b87a1a; --amber-glow:rgba(245,166,35,.15);
+  --cyan:#00d4ff; --cyan-dim:#0099bb; --cyan-glow:rgba(0,212,255,.12);
+  --green:#00e676; --green-dim:#00a854;
+  --red:#ff4444; --red-dim:#aa2222;
+  --purple:#b388ff; --purple-dim:#7c4dff;
+  --text-primary:#e8ecf0; --text-secondary:#8899aa; --text-dim:#445566;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-ui:'Rajdhani',sans-serif;
+  --font-jp:'Noto Sans JP',sans-serif;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-jp);
+  min-height:100vh;min-height:100dvh;overflow-x:hidden;
+  /* iOS safe area */
+  padding-top:env(safe-area-inset-top);
+}
+
+/* ── USER SELECT SCREEN ── */
+#user-screen{
+  position:fixed;inset:0;background:var(--bg-deep);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:2000;gap:40px;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.user-logo h1{font-family:var(--font-ui);font-size:42px;font-weight:700;letter-spacing:10px;color:var(--amber);text-shadow:0 0 30px rgba(245,166,35,.4);text-align:center}
+.user-logo p{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:3px;margin-top:6px;text-align:center}
+.user-section-title{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:3px;text-align:center}
+.user-list{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:480px}
+.user-chip{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 20px;background:var(--bg-panel);border:1px solid var(--border);
+  border-radius:24px;cursor:pointer;transition:all .2s;
+  font-size:14px;color:var(--text-primary);
+}
+.user-chip:hover{border-color:var(--amber);background:var(--amber-glow)}
+.user-chip.selected{border-color:var(--amber);background:var(--amber-glow);color:var(--amber)}
+.user-chip-del{font-size:12px;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0 0 0 4px;line-height:1;transition:color .15s}
+.user-chip-del:hover{color:var(--red)}
+.user-add-row{display:flex;gap:8px;align-items:center}
+.user-add-input{
+  background:var(--bg-deep);border:1px solid var(--border-active);border-radius:20px;
+  padding:8px 16px;color:var(--text-primary);font-family:var(--font-jp);font-size:13px;
+  outline:none;transition:border-color .2s;width:180px;
+}
+.user-add-input:focus{border-color:var(--amber)}
+.user-add-btn{
+  font-family:var(--font-ui);font-size:12px;font-weight:600;letter-spacing:1px;
+  padding:8px 16px;background:transparent;border:1px solid var(--amber-dim);
+  border-radius:20px;color:var(--amber);cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.user-add-btn:hover{background:var(--amber-glow)}
+.user-continue-btn{
+  font-family:var(--font-ui);font-size:14px;font-weight:700;letter-spacing:3px;
+  padding:12px 36px;background:transparent;border:2px solid var(--amber);
+  border-radius:4px;color:var(--amber);cursor:pointer;transition:all .2s;
+  opacity:.4;pointer-events:none;
+}
+.user-continue-btn.active{opacity:1;pointer-events:auto}
+.user-continue-btn.active:hover{background:var(--amber-glow);box-shadow:0 0 20px rgba(245,166,35,.2)}
+.user-display{
+  font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
+  padding:3px 10px;border:1px solid var(--border);border-radius:10px;
+  background:var(--bg-deep);
+}
+
+
+
+/* ── STARTUP ── */
+#startup-screen{
+  position:fixed;inset:0;background:var(--bg-deep);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:1000;gap:48px;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.startup-logo h1{font-family:var(--font-ui);font-size:52px;font-weight:700;letter-spacing:12px;color:var(--amber);text-shadow:0 0 40px rgba(245,166,35,.5),0 0 80px rgba(245,166,35,.2);text-align:center}
+.startup-logo p{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);letter-spacing:4px;margin-top:8px;text-align:center}
+.startup-divider{width:1px;height:50px;background:linear-gradient(to bottom,transparent,var(--amber),transparent)}
+.startup-options{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.startup-btn{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 36px;background:var(--bg-panel);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .2s;min-width:190px}
+.startup-btn:hover{border-color:var(--amber);background:var(--amber-glow);box-shadow:0 0 30px rgba(245,166,35,.1);transform:translateY(-2px)}
+.startup-btn .icon{font-size:28px}
+.startup-btn .label{font-family:var(--font-ui);font-size:15px;font-weight:600;letter-spacing:2px;color:var(--text-primary)}
+.startup-btn .sub{font-size:11px;color:var(--text-dim);letter-spacing:1px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:2000;backdrop-filter:blur(4px)}
+.modal-box{background:var(--bg-panel);border:1px solid var(--border-active);border-radius:4px;padding:32px 40px;min-width:420px;max-width:520px;display:flex;flex-direction:column;gap:20px}
+.modal-title{font-family:var(--font-ui);font-size:16px;font-weight:700;letter-spacing:3px;color:var(--amber)}
+.modal-subtitle{font-size:12px;color:var(--text-dim);margin-top:-14px}
+.modal-field label{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;display:block;margin-bottom:6px}
+.modal-input{width:100%;background:var(--bg-deep);border:1px solid var(--border-active);border-radius:2px;padding:10px 14px;color:var(--text-primary);font-family:var(--font-jp);font-size:14px;outline:none;transition:border-color .2s}
+.modal-input:focus{border-color:var(--amber)}
+.folder-row{display:flex;gap:8px;align-items:center}
+.folder-display{flex:1;background:var(--bg-deep);border:1px solid var(--border);border-radius:2px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.folder-btn{font-family:var(--font-ui);font-size:12px;font-weight:600;letter-spacing:1px;padding:8px 14px;background:var(--bg-deep);border:1px solid var(--border-active);border-radius:2px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;transition:all .15s}
+.folder-btn:hover{border-color:var(--cyan-dim);color:var(--cyan)}
+.folder-note{font-size:11px;color:var(--text-dim);margin-top:-14px}
+.modal-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:4px}
+.modal-btn{font-family:var(--font-ui);font-size:13px;font-weight:600;letter-spacing:1px;padding:9px 22px;border-radius:2px;cursor:pointer;transition:all .15s;border:1px solid var(--border);background:transparent;color:var(--text-secondary)}
+.modal-btn.primary{border-color:var(--amber);color:var(--amber)}
+.modal-btn.primary:hover{background:var(--amber-glow)}
+.modal-btn.danger{border-color:var(--red-dim);color:var(--red)}
+.modal-btn.danger:hover{background:rgba(255,68,68,.1)}
+.modal-btn:hover{border-color:var(--text-secondary)}
+.hidden{display:none!important}
+
+/* ── APP SHELL ── */
+#app{display:none;height:100vh;flex-direction:column}
+#app.visible{display:flex}
+
+/* Header */
+.app-header{display:flex;align-items:center;gap:14px;padding:9px 18px;background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0}
+.app-title{font-family:var(--font-ui);font-size:17px;font-weight:700;letter-spacing:4px;color:var(--amber)}
+.project-name{font-family:var(--font-mono);font-size:13px;color:var(--text-secondary);padding:4px 10px;border:1px solid var(--border);background:var(--bg-deep);border-radius:2px;cursor:pointer;transition:border-color .2s;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-name:hover{border-color:var(--amber-dim)}
+.header-spacer{flex:1}
+.save-group{display:flex;gap:6px;align-items:center}
+.header-btn{font-family:var(--font-ui);font-size:12px;font-weight:600;letter-spacing:1px;padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:2px;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap}
+.header-btn:hover{border-color:var(--amber);color:var(--amber)}
+.header-btn.blue:hover{border-color:var(--cyan);color:var(--cyan)}
+.header-btn.green:hover{border-color:var(--green);color:var(--green)}
+.header-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.save-folder-info{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);padding:4px 8px;border:1px solid var(--border);background:var(--bg-deep);border-radius:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:border-color .2s}
+.save-folder-info:hover{border-color:var(--cyan-dim);color:var(--cyan)}
+
+/* ── BODY = SIDEBAR + MAIN ── */
+.app-body{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR (Track List) ── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--bg-panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden
+}
+.sidebar-header{
+  padding:10px 14px 8px;border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);
+  display:flex;align-items:center;justify-content:space-between
+}
+.sidebar-add-btn{
+  font-family:var(--font-mono);font-size:14px;background:none;border:none;
+  color:var(--amber);cursor:pointer;padding:0 4px;line-height:1;transition:color .15s
+}
+.sidebar-add-btn:hover{color:#fff}
+.track-list{flex:1;overflow-y:auto;padding:6px 0}
+.track-item{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;cursor:pointer;transition:background .15s;
+  border-left:2px solid transparent;position:relative
+}
+.track-item:hover{background:var(--bg-hover)}
+.track-item.active{background:var(--amber-glow);border-left-color:var(--amber)}
+.track-num{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);min-width:16px}
+.track-info{flex:1;overflow:hidden}
+.track-name{font-size:12px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track-name.no-audio{color:var(--text-dim);font-style:italic}
+.track-file{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.track-bpm{font-family:var(--font-mono);font-size:10px;color:var(--green-dim);margin-top:1px}
+.track-cues{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:1px}
+.track-del-btn{
+  font-family:var(--font-mono);font-size:10px;padding:2px 5px;
+  background:transparent;border:1px solid var(--border);border-radius:2px;
+  color:var(--text-dim);cursor:pointer;opacity:0;transition:all .15s
+}
+.track-item:hover .track-del-btn{opacity:1}
+.track-del-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* ── MAIN AREA ── */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Transport */
+.transport-section{background:var(--bg-panel);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;flex-direction:column;gap:9px;flex-shrink:0}
+.transport-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.file-zone{display:flex;align-items:center;gap:8px;padding:6px 11px;border:1px dashed var(--border-active);border-radius:3px;cursor:pointer;transition:all .2s;background:var(--bg-deep)}
+.file-zone:hover{border-color:var(--amber-dim);background:var(--amber-glow)}
+.file-zone input{display:none}
+.file-zone .fl{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.file-zone .fn{font-family:var(--font-mono);font-size:11px;color:var(--amber);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time-display{font-family:var(--font-mono);font-size:24px;color:var(--cyan);text-shadow:0 0 16px rgba(0,212,255,.4);letter-spacing:2px;min-width:100px;text-align:center}
+.lbl{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:2px}
+.bpm-section{display:flex;align-items:center;gap:8px}
+.bpm-value{font-family:var(--font-mono);font-size:20px;color:var(--green);text-shadow:0 0 12px rgba(0,230,118,.3);min-width:50px;text-align:right}
+.bpm-mode-toggle{display:flex;border:1px solid var(--border);border-radius:2px;overflow:hidden}
+.bpm-mode-btn{font-family:var(--font-mono);font-size:10px;padding:4px 7px;background:var(--bg-deep);border:none;color:var(--text-dim);cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.bpm-mode-btn.active{background:var(--green-dim);color:#fff}
+.tap-btn{font-family:var(--font-ui);font-size:11px;font-weight:600;padding:5px 11px;background:var(--bg-deep);border:1px solid var(--green-dim);border-radius:2px;color:var(--green);cursor:pointer;transition:all .1s;user-select:none}
+.tap-btn:active{background:var(--green-dim);color:#fff;transform:scale(.97)}
+.bpm-manual-row{display:flex;align-items:center;gap:5px}
+.bpm-manual-input{width:54px;background:var(--bg-deep);border:1px solid var(--green-dim);border-radius:2px;padding:4px 6px;font-family:var(--font-mono);font-size:13px;color:var(--green);outline:none;text-align:center;transition:border-color .15s}
+.bpm-manual-input:focus{border-color:var(--green)}
+.bpm-set-btn{font-family:var(--font-ui);font-size:11px;font-weight:600;padding:4px 9px;background:var(--bg-deep);border:1px solid var(--green-dim);border-radius:2px;color:var(--green);cursor:pointer;transition:all .1s}
+.bpm-set-btn:hover{background:var(--green-dim);color:#fff}
+.bpm-detecting{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.progress-wrapper{display:flex;align-items:center;gap:8px;width:100%}
+#waveform-canvas{flex:1;height:40px;background:var(--bg-deep);border:1px solid var(--border);border-radius:2px;cursor:pointer}
+.duration-label{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);min-width:46px;text-align:right}
+.transport-controls{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.skip-group{display:flex;gap:3px}
+.ctrl-btn{font-family:var(--font-ui);font-size:11px;font-weight:600;padding:5px 10px;background:var(--bg-deep);border:1px solid var(--border);border-radius:2px;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ctrl-btn:hover{border-color:var(--cyan-dim);color:var(--cyan)}
+.ctrl-btn:active{transform:scale(.97)}
+.play-btn{font-size:12px;padding:6px 16px;border-color:var(--cyan-dim);color:var(--cyan);min-width:76px}
+.play-btn:hover{background:var(--cyan-glow)}
+.play-btn.playing{border-color:var(--amber);color:var(--amber)}
+.speed-group{display:flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:2px;padding:3px 9px;background:var(--bg-deep)}
+.speed-label{font-family:var(--font-mono);font-size:10px;color:var(--text-dim)}
+.speed-value{font-family:var(--font-mono);font-size:12px;color:var(--amber);min-width:34px;text-align:center}
+.speed-btn{font-family:var(--font-mono);font-size:13px;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:0 3px;transition:color .15s}
+.speed-btn:hover{color:var(--amber)}
+.sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+.kbd{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:1px 4px;border:1px solid var(--border-active);border-radius:2px;background:var(--bg-card);color:var(--text-dim)}
+.cue-record-btn{font-family:var(--font-ui);font-size:13px;font-weight:700;letter-spacing:2px;padding:7px 20px;background:linear-gradient(135deg,#1a0a00,#2a1200);border:2px solid var(--amber);border-radius:3px;color:var(--amber);cursor:pointer;transition:all .15s;text-shadow:0 0 10px rgba(245,166,35,.4);box-shadow:0 0 20px rgba(245,166,35,.1);user-select:none}
+.cue-record-btn:hover{background:linear-gradient(135deg,#2a1200,#3a1a00)}
+.cue-record-btn.flash{background:var(--amber);color:#000;box-shadow:0 0 40px rgba(245,166,35,.6)}
+
+/* Table */
+.table-section{flex:1;overflow-y:auto}
+.cue-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.cue-table thead{position:sticky;top:0;z-index:10;background:var(--bg-panel)}
+.cue-table thead th{font-family:var(--font-mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);font-weight:normal}
+.cue-table thead th:last-child{border-right:none}
+.col-num{width:46px}.col-qno{width:72px}.col-sec{width:130px}.col-count{width:110px}.col-ts{width:96px}.col-memo{}.col-action{width:96px}
+.cue-row{border-bottom:1px solid var(--border);transition:background .15s}
+.cue-row:hover{background:var(--bg-hover)}
+.cue-row.playing-from{background:rgba(0,212,255,.06)}
+.cue-table td{padding:6px 12px;border-right:1px solid var(--border);vertical-align:middle}
+.cue-table td:last-child{border-right:none}
+.row-num{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);text-align:right}
+.cell-input{width:100%;background:transparent;border:none;outline:none;font-family:var(--font-jp);font-size:13px;color:var(--text-primary);padding:2px 0;transition:all .15s}
+.cell-input:focus{background:rgba(245,166,35,.07);border-bottom:1px solid var(--amber-dim);padding:2px 4px;border-radius:1px}
+.count-input{font-family:var(--font-mono);font-size:13px;color:var(--cyan);text-align:center}
+.count-input.count-auto{color:var(--green)}
+.count-cell{display:flex;align-items:center;gap:5px}
+.count-badge{font-family:var(--font-mono);font-size:9px;padding:1px 4px;border:1px solid var(--green-dim);border-radius:2px;color:var(--green-dim);white-space:nowrap;opacity:.7}
+.qno-input{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--amber)}
+.ts-cell{font-family:var(--font-mono);font-size:11px;display:flex;align-items:center;gap:4px}
+.ts-val{color:var(--green);cursor:pointer;transition:color .15s;padding:1px 4px;border-radius:2px}
+.ts-val:hover{color:#fff;background:var(--green-dim)}
+.ts-val.empty{color:var(--text-dim);cursor:default}
+.ts-val.empty:hover{background:none;color:var(--text-dim)}
+.del-btn{font-family:var(--font-mono);font-size:10px;padding:3px 7px;background:transparent;border:1px solid var(--border);border-radius:2px;color:var(--text-dim);cursor:pointer;transition:all .15s}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+.add-row-area{padding:9px 16px;border-top:1px solid var(--border);background:var(--bg-panel);flex-shrink:0}
+.add-row-btn{font-family:var(--font-ui);font-size:12px;font-weight:600;letter-spacing:1px;padding:6px 16px;background:transparent;border:1px dashed var(--border-active);border-radius:2px;color:var(--text-dim);cursor:pointer;transition:all .2s}
+.add-row-btn:hover{border-color:var(--amber-dim);color:var(--amber)}
+
+/* Track meta row */
+.track-meta-row{display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.track-meta-field{display:flex;align-items:center;gap:8px;min-width:0}
+.track-meta-sep{width:1px;height:20px;background:var(--border)}
+.track-meta-input{
+  background:transparent;border:none;border-bottom:1px solid transparent;
+  outline:none;font-family:var(--font-jp);font-size:14px;color:var(--text-primary);
+  padding:2px 4px;transition:border-color .15s;min-width:160px;max-width:240px;
+}
+.track-meta-input:hover{border-bottom-color:var(--border-active)}
+.track-meta-input:focus{border-bottom-color:var(--amber);background:rgba(245,166,35,.04)}
+.track-meta-input::placeholder{color:var(--text-dim);font-size:12px}
+.restart-btn{
+  font-family:var(--font-ui);font-size:12px;font-weight:600;letter-spacing:1px;
+  padding:5px 14px;background:transparent;border:1px solid var(--red-dim);
+  border-radius:2px;color:var(--red);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0
+}
+.restart-btn:hover{background:rgba(255,68,68,.08)}
+.restart-options{display:flex;flex-direction:column;gap:8px}
+.restart-opt{display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:2px;transition:border-color .15s}
+.restart-opt:hover{border-color:var(--amber-dim)}
+.restart-opt input[type=radio]{accent-color:var(--amber);width:14px;height:14px;cursor:pointer}
+.restart-opt span{font-size:13px;color:var(--text-primary)}
+.status-bar{display:flex;align-items:center;gap:12px;padding:5px 16px;background:var(--bg-deep);border-top:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text-dim);flex-shrink:0}
+.s-dot{width:5px;height:5px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
+.s-dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
+.s-spacer{flex:1}
+
+.toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--bg-card);border:1px solid var(--amber-dim);border-radius:3px;padding:8px 20px;font-family:var(--font-mono);font-size:12px;color:var(--amber);opacity:0;transition:all .25s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── PRINT / PDF ── */
+@media print {
+  @page { size: A4 portrait; margin: 10mm 10mm 10mm 10mm; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: #fff !important; color: #000 !important; }
+
+  #startup-screen, #app .app-header, #app .sidebar,
+  #app .transport-section, #app .add-row-area, #app .status-bar,
+  #app .no-track-msg, #toast, audio { display: none !important; }
+
+  #app { display: block !important; height: auto !important; }
+  .app-body { display: block !important; }
+  .main-area { display: block !important; overflow: visible !important; }
+  .table-section { display: none !important; }
+  #pdf-pages { display: block !important; }
+
+  .pdf-page {
+    width: 100%;
+    height: 271mm;
+    page-break-after: always;
+    page-break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+  }
+  .pdf-page:last-child { page-break-after: avoid; }
+
+  /* ══ ヘッダー：Excel参考に倣い横1行で情報を均等配置 ══ */
+  .pdf-page-header {
+    border-top: 3px solid #111;
+    border-bottom: 3px solid #111;
+    margin-bottom: 0;
+    flex-shrink: 0;
+    display: grid;
+    /* 曲名 / アーティスト名 / BPM / 曲の長さ  を等幅4列 */
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+  .pdf-h-cell {
+    padding: 5px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1.5px solid #111;
+    text-align: center;
+  }
+  .pdf-h-cell:last-child { border-right: none; }
+  .pdf-h-label {
+    font-size: 8px; font-weight: 700; color: #777;
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 2px;
+  }
+  .pdf-h-value {
+    font-size: 17px; font-weight: 800; color: #111;
+    letter-spacing: 0.5px; line-height: 1.1;
+    word-break: break-all;
+  }
+  /* BPM・曲の長さはやや小さく */
+  .pdf-h-cell.pdf-h-sm .pdf-h-value {
+    font-size: 14px;
+  }
+  .pdf-h-page {
+    font-size: 9px; color: #aaa; margin-top: 2px; letter-spacing: 1px;
+  }
+
+  /* ══ テーブル ══ */
+  .pdf-table-wrap {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .pdf-cue-table {
+    width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1;
+  }
+  .pdf-cue-table thead th {
+    background: #222 !important;
+    color: #fff !important;
+    border: 1px solid #111;
+    padding: 4px 4px;
+    font-size: 9px; font-weight: 700;
+    text-align: center;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .pdf-cue-table td {
+    border: 1px solid #bbb;
+    padding: 0 4px;
+    vertical-align: middle;
+    color: #111;
+    text-align: center;   /* ← 全セル中央揃え */
+  }
+  .pdf-cue-table tr:nth-child(even) td { background: #f0f0f0 !important; }
+  .pdf-cue-table tr.pdf-empty-row td  { color: transparent; border-color: #ddd; }
+
+  /* 列幅：CueNo. / Section / Count を等幅、Memo を最大 */
+  .pdf-col-qno   { width: 11%; }
+  .pdf-col-sec   { width: 11%; }
+  .pdf-col-count { width: 11%; }
+  .pdf-col-memo  { /* 残り 67% */ }
+
+  .pdf-td-qno {
+    font-family: monospace; font-weight: 900; font-size: 15px; color: #111 !important;
+  }
+  .pdf-td-sec {
+    font-size: 14px; font-weight: 700; color: #111;
+    text-align: center;
+  }
+  .pdf-td-count {
+    font-family: monospace; font-size: 16px; font-weight: 900;
+    color: #003399 !important; text-align: center; letter-spacing: 1px;
+  }
+  .pdf-td-memo {
+    font-size: 12px; text-align: left;  /* memoだけ左揃えの方が読みやすい */
+    padding-left: 8px;
+  }
+}
+#pdf-pages { display: none; }
+#print-header { display: none; }
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--border-active);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--amber-dim)}
+
+/* no-track placeholder */
+.no-track-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;color:var(--text-dim)}
+.no-track-msg p{font-family:var(--font-mono);font-size:12px;letter-spacing:2px}
+.no-track-msg button{font-family:var(--font-ui);font-size:13px;font-weight:600;letter-spacing:2px;padding:10px 24px;background:transparent;border:1px solid var(--amber-dim);border-radius:3px;color:var(--amber);cursor:pointer;transition:all .2s}
+.no-track-msg button:hover{background:var(--amber-glow)}
+
+/* ── CLOUD SYNC ── */
+.cloud-btn{border-color:var(--cyan-dim)!important;color:var(--cyan)!important}
+.cloud-btn:hover{background:var(--cyan-glow)!important}
+.cloud-btn.synced{border-color:var(--green)!important;color:var(--green)!important}
+.cloud-btn.syncing{border-color:var(--amber)!important;color:var(--amber)!important;animation:blink .6s infinite}
+.cloud-status-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.cloud-status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:all .3s}
+.cloud-status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.cloud-status-dot.error{background:var(--red)}
+.cloud-status-dot.syncing{background:var(--amber);animation:blink .6s infinite}
+.cloud-status-text{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)}
+
+/* ── FONT PICKER ── */
+.font-grid{display:flex;flex-wrap:wrap;gap:8px}
+.font-opt{
+  padding:7px 14px;border:1px solid var(--border);border-radius:2px;
+  cursor:pointer;font-size:13px;transition:all .15s;color:var(--text-secondary);
+  background:var(--bg-deep);
+}
+.font-opt:hover{border-color:var(--amber-dim);color:var(--text-primary)}
+.font-opt.selected{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.font-preview{
+  padding:12px 16px;background:var(--bg-deep);border:1px solid var(--border);
+  border-radius:2px;font-size:16px;color:var(--text-primary);
+  transition:font-family .2s;min-height:44px;
+}
+
+/* ── SECTION PRESETS ── */
+.preset-list{display:flex;flex-wrap:wrap;gap:8px;min-height:40px}
+.preset-tag{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;background:var(--bg-deep);border:1px solid var(--border-active);
+  border-radius:12px;font-size:12px;color:var(--text-secondary);
+}
+.preset-tag .ptag-del{
+  font-size:12px;color:var(--text-dim);cursor:pointer;line-height:1;
+  background:none;border:none;padding:0 0 0 2px;transition:color .15s;
+}
+.preset-tag .ptag-del:hover{color:var(--red)}
+
+/* SECTION cell: combo (input + datalist) */
+.section-combo{width:100%;position:relative}
+.section-combo input{
+  width:100%;background:transparent;border:none;outline:none;
+  font-family:var(--font-jp);font-size:13px;color:var(--text-primary);
+  padding:2px 0;transition:all .15s;
+}
+.section-combo input:focus{
+  background:rgba(245,166,35,.07);border-bottom:1px solid var(--amber-dim);
+  padding:2px 4px;border-radius:1px;
+}
+
+.beat-sec-value{font-family:var(--font-mono);font-size:14px;color:var(--purple);text-shadow:0 0 10px rgba(179,136,255,.3);min-width:48px;text-align:center}
+.loop-btn{border-color:var(--border)!important;color:var(--text-dim)!important}
+.loop-btn.loop-on{border-color:var(--cyan)!important;color:var(--cyan)!important;background:var(--cyan-glow)!important}
+.ins-btn{font-family:var(--font-mono);font-size:10px;padding:3px 6px;background:transparent;border:1px solid var(--border);border-radius:2px;color:var(--text-dim);cursor:pointer;transition:all .15s;margin-right:3px}
+.ins-btn:hover{border-color:var(--purple);color:var(--purple)}
+
+/* ── TOUCH BAR ── */
+.touch-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  align-items: stretch;
+  background: #0a0c0f;
+  border-top: 2px solid var(--amber);
+  z-index: 500;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.6);
+}
+.touch-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 8px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .08s;
+  min-height: 80px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.touch-btn:active { background: rgba(255,255,255,.07); }
+.touch-icon { font-size: 30px; line-height: 1; }
+.touch-label {
+  font-family: var(--font-ui);
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  color: var(--text-secondary);
+}
+.touch-play .touch-icon  { color: var(--cyan); }
+.touch-play .touch-label { color: var(--cyan); }
+.touch-play.is-playing .touch-icon  { color: var(--amber); }
+.touch-play.is-playing .touch-label { color: var(--amber); }
+.touch-cue  { border-right: none; }
+.touch-cue .touch-icon  { color: var(--amber); font-size: 36px; }
+.touch-cue .touch-label { color: var(--amber); }
+.touch-cue:active { background: var(--amber-glow) !important; }
+.touch-tap .touch-icon  { color: var(--green); }
+.touch-tap .touch-label { color: var(--green); }
+.touch-toggle {
+  width: 38px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; border-left: 1px solid var(--border);
+  color: var(--text-dim); font-size: 13px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.touch-tab {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px));
+  right: 0; left: 0;
+  z-index: 500;
+  display: flex;
+  justify-content: center;
+}
+.touch-toggle-mini {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--amber-dim);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: var(--amber);
+  cursor: pointer;
+  letter-spacing: 1px;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 -2px 8px rgba(245,166,35,.1);
+}
+#app.touch-open { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+@media print { .touch-bar, .touch-tab { display: none !important; } }
+
+/* ── KEY CONFIG ── */
+.keymap-table{width:100%;border-collapse:collapse}
+.keymap-table tr{border-bottom:1px solid var(--border)}
+.keymap-table tr:last-child{border-bottom:none}
+.keymap-table td{padding:10px 4px;vertical-align:middle}
+.keymap-label{font-family:var(--font-jp);font-size:13px;color:var(--text-secondary);width:130px}
+.keymap-action-icon{font-size:16px;width:28px;text-align:center}
+.keymap-bind{
+  font-family:var(--font-mono);font-size:13px;
+  background:var(--bg-deep);border:1px solid var(--border-active);border-radius:2px;
+  padding:7px 10px;color:var(--amber);cursor:pointer;text-align:center;
+  min-width:120px;transition:all .15s;user-select:none;
+}
+.keymap-bind:hover{border-color:var(--amber-dim)}
+.keymap-bind.listening{
+  border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 10px rgba(0,212,255,.2);
+  animation:pulse-cyan .6s infinite;
+}
+@keyframes pulse-cyan{0%,100%{opacity:1}50%{opacity:.5}}
+.keymap-bind.conflict{border-color:var(--red);color:var(--red)}
+.keymap-clear{font-family:var(--font-mono);font-size:11px;padding:4px 8px;background:transparent;border:1px solid var(--border);border-radius:2px;color:var(--text-dim);cursor:pointer;margin-left:6px;transition:all .15s}
+.keymap-clear:hover{border-color:var(--red-dim);color:var(--red)}
+.keymap-hint{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:-14px}
+.key-badge{display:inline-block;font-family:var(--font-mono);font-size:11px;padding:2px 8px;border:1px solid var(--border-active);border-radius:3px;background:var(--bg-card);color:var(--amber);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- USER SELECT -->
+<div id="user-screen">
+  <div class="user-logo">
+    <h1>STAGELOG</h1>
+    <p>LIGHTING RECORD CUE SHEET SYSTEM</p>
+  </div>
+  <div class="user-section-title">SELECT USER</div>
+  <div class="user-list" id="user-list"></div>
+  <div class="user-add-row">
+    <input class="user-add-input" id="user-add-input" type="text" placeholder="新しいユーザー名" maxlength="40">
+    <button class="user-add-btn" id="user-add-btn">＋ 追加</button>
+  </div>
+  <button class="user-continue-btn" id="user-continue-btn">CONTINUE →</button>
+</div>
+
+<!-- STARTUP -->
+<div id="startup-screen">
+  <div class="startup-logo">
+    <h1>STAGELOG</h1>
+    <p>LIGHTING RECORD CUE SHEET SYSTEM</p>
+  </div>
+  <div class="startup-divider"></div>
+  <div class="startup-options">
+    <div class="startup-btn" id="btn-new-project"><span class="icon">＋</span><span class="label">NEW PROJECT</span><span class="sub">新規プロジェクト</span></div>
+    <div class="startup-btn" id="btn-open-project"><span class="icon">📂</span><span class="label">OPEN PROJECT</span><span class="sub">JSONファイルを開く</span></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="pdf-pages"></div>
+
+  <!-- Header -->
+  <div class="app-header">
+    <span class="app-title">STAGELOG</span>
+    <span class="user-display" id="header-user-display">---</span>
+    <span class="project-name" id="project-name-display">---</span>
+    <div class="header-spacer"></div>
+    <div class="save-group">
+      <span class="save-folder-info" id="save-folder-info">📁 保存先未設定</span>
+      <button class="header-btn cloud-btn" id="btn-cloud" title="GitHub Gistクラウド同期">☁ クラウド</button>
+      <button class="header-btn" id="btn-section-presets" title="SECTIONプルダウン候補を管理">📝 Section</button>
+      <button class="header-btn" id="btn-pdf-settings" title="PDF出力フォント設定">🔤 PDF設定</button>
+      <button class="header-btn" id="btn-keyconfig" title="キー割り当て設定">⌨ キー設定</button>
+      <button class="header-btn" id="btn-save-json">💾 JSON</button>
+      <button class="header-btn blue" id="btn-export-csv">📊 CSV</button>
+      <button class="header-btn green" id="btn-export-pdf">🖨️ PDF</button>
+      <button class="header-btn danger" id="btn-startup">← TOP</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar: Track List -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>TRACKS</span>
+        <button class="sidebar-add-btn" id="btn-add-track" title="曲を追加">＋</button>
+      </div>
+      <div class="track-list" id="track-list"></div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-area" id="main-area">
+
+      <!-- No track selected -->
+      <div class="no-track-msg" id="no-track-msg">
+        <p>NO TRACK SELECTED</p>
+        <button id="btn-add-track-main">＋ 曲を追加</button>
+      </div>
+
+      <!-- Transport (shown when track selected) -->
+      <div class="transport-section hidden" id="transport-section">
+        <!-- Track meta row -->
+        <div class="track-meta-row">
+          <div class="track-meta-field">
+            <span class="lbl">ARTIST</span>
+            <input class="track-meta-input" id="track-artist-display" type="text" placeholder="アーティスト名" maxlength="120">
+          </div>
+          <div class="track-meta-sep"></div>
+          <div class="track-meta-field">
+            <span class="lbl">TITLE</span>
+            <input class="track-meta-input" id="track-title-display" type="text" placeholder="曲名" maxlength="120">
+          </div>
+          <div style="flex:1"></div>
+          <button class="restart-btn" id="btn-restart" title="全CUEのタイムスタンプをリセットして記録をやり直す">↺ RESTART</button>
+        </div>
+        <div class="transport-top">
+          <label class="file-zone">
+            <input type="file" id="audio-file" accept="audio/*">
+            <span>🎵</span>
+            <span class="fl" id="file-label">音源を選択</span>
+            <span class="fn hidden" id="file-name-display"></span>
+          </label>
+          <div class="sep"></div>
+          <div>
+            <div class="lbl">TIME</div>
+            <div class="time-display" id="time-display">0:00.0</div>
+          </div>
+          <div class="sep"></div>
+          <div class="bpm-section">
+            <div>
+              <div class="lbl">BPM</div>
+              <div class="bpm-value" id="bpm-display">---</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div class="bpm-mode-toggle">
+                <button class="bpm-mode-btn active" id="btn-bpm-auto">AUTO</button>
+                <button class="bpm-mode-btn" id="btn-bpm-tap">TAP</button>
+                <button class="bpm-mode-btn" id="btn-bpm-manual">手動</button>
+              </div>
+              <button class="tap-btn hidden" id="tap-btn">TAP TEMPO</button>
+              <div class="bpm-manual-row hidden" id="bpm-manual-row">
+                <input class="bpm-manual-input" id="bpm-manual-input" type="number" min="20" max="300" placeholder="120">
+                <button class="bpm-set-btn" id="bpm-set-btn">SET</button>
+              </div>
+            </div>
+          </div>
+          <!-- 1拍の秒数表示 -->
+          <div id="beat-sec-display" class="hidden">
+            <div class="lbl">1拍</div>
+            <div class="beat-sec-value" id="beat-sec-value">---</div>
+          </div>
+          <div class="sep"></div>
+          <!-- 音源なし用：曲の長さ手動指定 -->
+          <div id="manual-duration-area" class="hidden">
+            <div class="lbl">曲の長さ</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input class="bpm-manual-input" id="manual-duration-input" type="text" placeholder="3:30" style="width:54px">
+              <button class="bpm-set-btn" id="manual-duration-set">SET</button>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <button class="cue-record-btn" id="cue-record-btn">⬤ CUE</button>
+        </div>
+        <div class="progress-wrapper">
+          <canvas id="waveform-canvas"></canvas>
+          <span class="duration-label" id="duration-label">0:00</span>
+        </div>
+        <div class="transport-controls">
+          <div class="skip-group">
+            <button class="ctrl-btn" id="btn-back10">«10s</button>
+            <button class="ctrl-btn" id="btn-back5">«5s</button>
+            <button class="ctrl-btn" id="btn-back1">«1s</button>
+          </div>
+          <button class="ctrl-btn play-btn" id="btn-play">▶ PLAY</button>
+          <button class="ctrl-btn" id="btn-stop">■ STOP</button>
+          <div class="skip-group">
+            <button class="ctrl-btn" id="btn-fwd1">1s»</button>
+            <button class="ctrl-btn" id="btn-fwd5">5s»</button>
+            <button class="ctrl-btn" id="btn-fwd10">10s»</button>
+          </div>
+          <div class="sep"></div>
+          <div class="speed-group">
+            <span class="speed-label">SPEED</span>
+            <button class="speed-btn" id="btn-speed-down">−</button>
+            <span class="speed-value" id="speed-display">1.0×</span>
+            <button class="speed-btn" id="btn-speed-up">＋</button>
+          </div>
+          <div class="sep"></div>
+          <button class="ctrl-btn loop-btn" id="btn-loop" title="ループ再生">↺ LOOP</button>
+          <div class="sep"></div>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim)">
+            <span id="hint-cue" class="key-badge">Space</span> CUE &nbsp;
+            <span id="hint-play" class="key-badge">P</span> 再生/停止 &nbsp;
+            <span id="hint-tap" class="key-badge">T</span> TAP
+          </span>
+        </div>
+      </div>
+
+      <!-- CUE Table -->
+      <div class="table-section hidden" id="table-section">
+        <table class="cue-table">
+          <thead><tr>
+            <th class="col-num">#</th>
+            <th class="col-qno">Q No.</th>
+            <th class="col-sec">SECTION</th>
+            <th class="col-count">Count</th>
+            <th class="col-ts">Timestamp</th>
+            <th class="col-memo">Memo</th>
+            <th class="col-action"></th>
+          </tr></thead>
+          <tbody id="cue-tbody"></tbody>
+        </table>
+      </div>
+      <div class="add-row-area hidden" id="add-row-area">
+        <button class="add-row-btn" id="add-row-btn">＋ 行を追加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="s-dot" id="s-dot"></div>
+    <span id="s-text">音源なし</span>
+    <span>│</span>
+    <span id="cue-count">0行</span>
+    <div class="s-spacer"></div>
+    <span>STAGELOG v2.0</span>
+  </div>
+
+  <!-- Touch Panel: 画面下部固定の大ボタン（iPhone/iPad用） -->
+  <div class="touch-bar hidden" id="touch-bar">
+    <button class="touch-btn touch-play" id="touch-play">
+      <span class="touch-icon" id="touch-play-icon">▶</span>
+      <span class="touch-label">PLAY</span>
+    </button>
+    <button class="touch-btn touch-cue" id="touch-cue">
+      <span class="touch-icon">⬤</span>
+      <span class="touch-label">CUE</span>
+    </button>
+    <button class="touch-btn touch-tap hidden" id="touch-tap">
+      <span class="touch-icon">♩</span>
+      <span class="touch-label">TAP</span>
+    </button>
+    <button class="touch-toggle" id="touch-toggle" title="タッチパネル表示/非表示">
+      <span id="touch-toggle-icon">▼</span>
+    </button>
+  </div>
+  <!-- タッチバー折りたたみ時の小さいタブ -->
+  <div class="touch-tab hidden" id="touch-tab">
+    <button class="touch-toggle-mini" id="touch-toggle-mini">◎ TOUCH</button>
+  </div>
+</div>
+
+<!-- MODAL: New Project -->
+<div class="modal-overlay hidden" id="modal-new">
+  <div class="modal-box">
+    <div class="modal-title">NEW PROJECT</div>
+    <div class="modal-subtitle">新規プロジェクトの設定</div>
+    <div class="modal-field">
+      <label>プロジェクト名</label>
+      <input class="modal-input" id="new-name-input" type="text" placeholder="例：〇〇公演 照明キュー" maxlength="80">
+    </div>
+    <div class="modal-field">
+      <label>保存先フォルダ（任意）</label>
+      <div class="folder-row">
+        <span class="folder-display" id="new-folder-display">未選択（後から設定可）</span>
+        <button class="folder-btn" id="new-folder-btn">📁 選択</button>
+      </div>
+      <div class="folder-note">※ Chrome で File System Access API が利用可能</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="new-cancel">キャンセル</button>
+      <button class="modal-btn primary" id="new-ok">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Rename Project -->
+<div class="modal-overlay hidden" id="modal-rename">
+  <div class="modal-box">
+    <div class="modal-title">RENAME PROJECT</div>
+    <div class="modal-field"><label>プロジェクト名</label><input class="modal-input" id="rename-input" type="text" maxlength="80"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="rename-cancel">キャンセル</button>
+      <button class="modal-btn primary" id="rename-ok">変更</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Track -->
+<div class="modal-overlay hidden" id="modal-add-track">
+  <div class="modal-box">
+    <div class="modal-title">ADD TRACK</div>
+    <div class="modal-subtitle">曲を追加</div>
+    <div class="modal-field"><label>管理名（リスト表示用）</label><input class="modal-input" id="track-name-input" type="text" placeholder="例：01 オープニング" maxlength="80"></div>
+    <div class="modal-field"><label>アーティスト名</label><input class="modal-input" id="track-artist-input" type="text" placeholder="例：Artist Name" maxlength="120"></div>
+    <div class="modal-field"><label>曲名</label><input class="modal-input" id="track-title-input" type="text" placeholder="例：Song Title" maxlength="120"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="track-cancel">キャンセル</button>
+      <button class="modal-btn primary" id="track-ok">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Cloud Sync -->
+<div class="modal-overlay hidden" id="modal-cloud">
+  <div class="modal-box" style="min-width:480px">
+    <div class="modal-title">☁ CLOUD SYNC</div>
+    <div class="modal-subtitle">GitHub Gistを使ってデバイス間でデータを同期します</div>
+
+    <div class="modal-field">
+      <label>GitHub Personal Access Token（gistスコープ）</label>
+      <div style="display:flex;gap:8px">
+        <input class="modal-input" id="cloud-token-input" type="password" placeholder="ghp_xxxxxxxxxxxx" style="flex:1">
+        <button class="modal-btn" id="cloud-token-toggle" style="white-space:nowrap;padding:8px 12px">表示</button>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label>Gist ID（初回保存時に自動作成されます）</label>
+      <input class="modal-input" id="cloud-gist-id" type="text" placeholder="自動設定されます" readonly style="color:var(--text-dim)">
+    </div>
+
+    <div class="cloud-status-row">
+      <div class="cloud-status-dot" id="cloud-status-dot"></div>
+      <span class="cloud-status-text" id="cloud-status-text">未設定</span>
+    </div>
+
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+      <button class="modal-btn" id="cloud-modal-close">閉じる</button>
+      <button class="modal-btn" id="cloud-clear-btn" style="border-color:var(--red-dim);color:var(--red)">設定クリア</button>
+      <button class="modal-btn primary" id="cloud-load-btn">☁ クラウドから読み込み</button>
+      <button class="modal-btn primary" id="cloud-save-btn">☁ クラウドへ保存</button>
+    </div>
+
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);margin-top:-8px;line-height:1.8">
+      ※ TokenはこのデバイスのlocalStorageにのみ保存されます<br>
+      ※ GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)<br>
+      ※ スコープは「gist」のみチェックで十分です
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Restart -->
+<div class="modal-overlay hidden" id="modal-restart">
+  <div class="modal-box">
+    <div class="modal-title">RESTART</div>
+    <div class="modal-subtitle">どこからCUE記録をやり直しますか？</div>
+    <div class="modal-field">
+      <label>やり直し開始位置</label>
+      <div class="restart-options">
+        <label class="restart-opt"><input type="radio" name="restart-mode" value="all" checked> <span>先頭から全部リセット</span></label>
+        <label class="restart-opt"><input type="radio" name="restart-mode" value="qno"> <span>Q No. 以降をリセット</span></label>
+        <label class="restart-opt"><input type="radio" name="restart-mode" value="sec"> <span>秒数以降をリセット</span></label>
+      </div>
+    </div>
+    <div class="modal-field hidden" id="restart-qno-field">
+      <label>Q No.（この番号以降をリセット）</label>
+      <input class="modal-input" id="restart-qno-input" type="text" placeholder="例：5">
+    </div>
+    <div class="modal-field hidden" id="restart-sec-field">
+      <label>秒数（この時間以降のCUEをリセット）</label>
+      <input class="modal-input" id="restart-sec-input" type="text" placeholder="例：90.5　または　1:30">
+    </div>
+    <div class="modal-field">
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">※ セクション名・Memoはそのまま残ります</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="restart-cancel">キャンセル</button>
+      <button class="modal-btn danger" id="restart-ok">リセット実行</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PDF Settings (Font) -->
+<div class="modal-overlay hidden" id="modal-pdf-settings">
+  <div class="modal-box" style="min-width:460px">
+    <div class="modal-title">PDF SETTINGS</div>
+    <div class="modal-subtitle">PDF出力時のフォントを選択</div>
+    <div class="modal-field">
+      <label>フォント</label>
+      <div class="font-grid" id="font-grid"></div>
+    </div>
+    <div class="modal-field">
+      <label>プレビュー</label>
+      <div class="font-preview" id="font-preview">照明CUEシート / Lighting Cue Sheet 123</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="pdf-settings-cancel">キャンセル</button>
+      <button class="modal-btn primary" id="pdf-settings-ok">適用</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Section Presets -->
+<div class="modal-overlay hidden" id="modal-section-presets">
+  <div class="modal-box" style="min-width:440px">
+    <div class="modal-title">SECTION PRESETS</div>
+    <div class="modal-subtitle">SECTION欄のプルダウン候補を管理</div>
+    <div class="modal-field">
+      <label>登録済みの単語</label>
+      <div class="preset-list" id="preset-list"></div>
+    </div>
+    <div class="modal-field">
+      <label>新しい単語を追加</label>
+      <div style="display:flex;gap:8px">
+        <input class="modal-input" id="preset-add-input" type="text" placeholder="例：大サビ" maxlength="40" style="flex:1">
+        <button class="modal-btn primary" id="preset-add-btn" style="white-space:nowrap">追加</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="section-presets-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Key Config -->
+<div class="modal-overlay hidden" id="modal-keyconfig">
+  <div class="modal-box" style="min-width:460px">
+    <div class="modal-title">KEY CONFIG</div>
+    <div class="modal-subtitle">各アクションにキーを割り当て。ボタンをクリック後に任意のキーを押してください</div>
+    <table class="keymap-table">
+      <tr>
+        <td class="keymap-action-icon">⬤</td>
+        <td class="keymap-label">CUE 記録</td>
+        <td><div style="display:flex;align-items:center">
+          <div class="keymap-bind" id="kbind-cue" data-action="cue">Space</div>
+          <button class="keymap-clear" data-clear="cue">CLR</button>
+        </div></td>
+      </tr>
+      <tr>
+        <td class="keymap-action-icon">▶</td>
+        <td class="keymap-label">再生 / 停止</td>
+        <td><div style="display:flex;align-items:center">
+          <div class="keymap-bind" id="kbind-play" data-action="play">P</div>
+          <button class="keymap-clear" data-clear="play">CLR</button>
+        </div></td>
+      </tr>
+      <tr>
+        <td class="keymap-action-icon">♩</td>
+        <td class="keymap-label">TAP TEMPO</td>
+        <td><div style="display:flex;align-items:center">
+          <div class="keymap-bind" id="kbind-tap" data-action="tap">T</div>
+          <button class="keymap-clear" data-clear="tap">CLR</button>
+        </div></td>
+      </tr>
+    </table>
+    <div class="keymap-hint">※ 未割り当て(CLR)の場合はそのアクションはキーで操作できません</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="keyconfig-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<audio id="audio-player"></audio>
+
+<script>
+// ════════════════════════════════════════════
+//  DATA MODEL
+//  Project { projectName, tracks[], nextTrackId, nextCueId, dirHandle }
+//  Track   { id, name, artist, title, fileName, bpm, bpmMode, cues[], audioUrl(runtime) }
+//  Cue     { id, qno, section, count, timestamp, memo, _autoCount }
+// ════════════════════════════════════════════
+const S = {
+  projectName: '無題のプロジェクト',
+  tracks: [],
+  nextTrackId: 1,
+  nextCueId: 1,
+  dirHandle: null,
+  pdfFont: 'Noto Sans JP',
+  sectionPresets: ['Aメロ','Bメロ','Cメロ','サビ','間奏','イントロ','アウトロ','ブレイク','Dメロ','落とし'],
+  // ユーザー
+  currentUser: null,
+  // runtime
+  currentTrackId: null,
+  bpmMode: 'auto',
+  tapTimes: [],
+  playbackRate: 1.0,
+  isPlaying: false,
+  // 音源なし用クロック
+  manualTime: 0,
+  manualTimer: null,
+  manualStartAt: null,
+  manualStartSec: 0,
+  // ループ
+  loopEnabled: false,
+};
+
+function currentTrack() { return S.tracks.find(t => t.id === S.currentTrackId) || null; }
+
+// ════════════════════════════════════════════
+//  ELEMENT SHORTCUTS
+// ════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const audio  = $('audio-player');
+const canvas = $('waveform-canvas');
+const cx     = canvas.getContext('2d');
+const tbody  = $('cue-tbody');
+
+// ════════════════════════════════════════════
+//  USER MANAGEMENT
+// ════════════════════════════════════════════
+const USERS_KEY = 'stagelog_users';
+const USER_PRESETS_KEY = 'stagelog_user_presets_';
+
+function loadUsers() {
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
+}
+function saveUsers(users) {
+  try { localStorage.setItem(USERS_KEY, JSON.stringify(users)); } catch {}
+}
+function loadUserPresets(userName) {
+  try {
+    const saved = localStorage.getItem(USER_PRESETS_KEY + userName);
+    return saved ? JSON.parse(saved) : null;
+  } catch { return null; }
+}
+function saveUserPresets(userName, presets) {
+  try { localStorage.setItem(USER_PRESETS_KEY + userName, JSON.stringify(presets)); } catch {}
+}
+
+let _selectedUser = null;
+
+function renderUserList() {
+  const users = loadUsers();
+  const list  = $('user-list');
+  list.innerHTML = '';
+  users.forEach(u => {
+    const chip = document.createElement('div');
+    chip.className = 'user-chip' + (u === _selectedUser ? ' selected' : '');
+    chip.innerHTML = `<span>${esc(u)}</span><button class="user-chip-del" title="削除">✕</button>`;
+    chip.querySelector('span').addEventListener('click', () => {
+      _selectedUser = u;
+      renderUserList();
+      $('user-continue-btn').classList.add('active');
+    });
+    chip.querySelector('.user-chip-del').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm(`ユーザー「${u}」を削除しますか？`)) return;
+      const us = loadUsers().filter(x => x !== u);
+      saveUsers(us);
+      if (_selectedUser === u) { _selectedUser = null; $('user-continue-btn').classList.remove('active'); }
+      renderUserList();
+    });
+    list.appendChild(chip);
+  });
+  if (users.length === 0) {
+    list.innerHTML = '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">ユーザーがいません。追加してください</span>';
+  }
+}
+
+$('user-add-btn').addEventListener('click', addUser);
+$('user-add-input').addEventListener('keydown', e => { if (e.key==='Enter') addUser(); });
+function addUser() {
+  const name = $('user-add-input').value.trim();
+  if (!name) return;
+  const users = loadUsers();
+  if (users.includes(name)) { showToastOnUser('すでに存在します'); return; }
+  users.push(name);
+  saveUsers(users);
+  $('user-add-input').value = '';
+  renderUserList();
+  // 追加したユーザーを自動選択
+  _selectedUser = name;
+  renderUserList();
+  $('user-continue-btn').classList.add('active');
+}
+function showToastOnUser(msg) {
+  // toast はまだ初期化前かもしれないので alert fallback
+  try { showToast(msg); } catch { alert(msg); }
+}
+
+$('user-continue-btn').addEventListener('click', () => {
+  if (!_selectedUser) return;
+  S.currentUser = _selectedUser;
+  // ユーザー固有プリセットをロード
+  const presets = loadUserPresets(_selectedUser);
+  if (presets) S.sectionPresets = presets;
+  else S.sectionPresets = ['Aメロ','Bメロ','Cメロ','サビ','間奏','イントロ','アウトロ','ブレイク','Dメロ','落とし'];
+  $('user-screen').style.display = 'none';
+  $('startup-screen').style.display = 'flex';
+  $('header-user-display').textContent = '👤 ' + _selectedUser;
+});
+
+// 起動時：ユーザー選択画面を表示
+$('startup-screen').style.display = 'none';
+renderUserList();
+
+// ════════════════════════════════════════════
+//  STARTUP
+// ════════════════════════════════════════════
+$('btn-new-project').addEventListener('click', openNewModal);
+$('btn-open-project').addEventListener('click', openExistingProject);
+
+function openNewModal() {
+  $('new-name-input').value = '';
+  $('new-folder-display').textContent = '未選択（後から設定可）';
+  S._pendingDir = null;
+  $('modal-new').classList.remove('hidden');
+  setTimeout(() => $('new-name-input').focus(), 50);
+}
+$('new-cancel').addEventListener('click', () => $('modal-new').classList.add('hidden'));
+$('new-ok').addEventListener('click', confirmNewProject);
+$('new-name-input').addEventListener('keydown', e => { if (e.key==='Enter') confirmNewProject(); });
+$('new-folder-btn').addEventListener('click', async () => {
+  try {
+    const h = await window.showDirectoryPicker({ mode:'readwrite' });
+    S._pendingDir = h; $('new-folder-display').textContent = '📂 '+h.name;
+  } catch(e) { if (e.name!=='AbortError') showToast('フォルダ選択に失敗しました'); }
+});
+
+function confirmNewProject() {
+  const name = $('new-name-input').value.trim();
+  if (!name) { flashRed('new-name-input'); return; }
+  $('modal-new').classList.add('hidden');
+  S.projectName = name;
+  S.tracks = [];
+  S.nextTrackId = 1;
+  S.nextCueId = 1;
+  S.dirHandle = S._pendingDir || null;
+  S._pendingDir = null;
+  launchApp();
+}
+
+async function openExistingProject() {
+  try {
+    const [fh] = await window.showOpenFilePicker({
+      types:[{description:'STAGELOG JSON',accept:{'application/json':['.json']}}]
+    });
+    await loadProjectFile(await fh.getFile());
+  } catch(e) {
+    if (e.name==='AbortError') return;
+    fallbackOpenFile();
+  }
+}
+function fallbackOpenFile() {
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='.json';
+  inp.onchange = async e => {
+    const file = e.target.files[0]; if(!file) return;
+    await loadProjectFile(file);
+  };
+  inp.click();
+}
+async function loadProjectFile(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    S.projectName = data.projectName || 'プロジェクト';
+    S.tracks = (data.tracks||[]).map(t => ({ ...t, audioUrl: null }));
+    S.nextTrackId = data.nextTrackId || (Math.max(0,...S.tracks.map(t=>t.id))+1);
+    S.nextCueId = data.nextCueId || 1;
+    S.pdfFont = data.pdfFont || 'Noto Sans JP';
+    if (data.sectionPresets && Array.isArray(data.sectionPresets)) S.sectionPresets = data.sectionPresets;
+    S.dirHandle = null;
+    launchApp();
+    showToast('プロジェクトを読み込みました');
+  } catch { alert('ファイルの読み込みに失敗しました'); }
+}
+
+function launchApp() {
+  $('startup-screen').style.display = 'none';
+  $('app').classList.add('visible');
+  $('project-name-display').textContent = S.projectName;
+  updateFolderInfo();
+  renderTrackList();
+  if (S.tracks.length > 0) selectTrack(S.tracks[0].id);
+  else showNoTrack();
+  resizeCanvas();
+}
+
+// ════════════════════════════════════════════
+//  TRACK MANAGEMENT
+// ════════════════════════════════════════════
+function openAddTrackModal() {
+  $('track-name-input').value = '';
+  $('track-artist-input').value = '';
+  $('track-title-input').value = '';
+  $('modal-add-track').classList.remove('hidden');
+  setTimeout(() => $('track-name-input').focus(), 50);
+}
+$('btn-add-track').addEventListener('click', openAddTrackModal);
+$('btn-add-track-main').addEventListener('click', openAddTrackModal);
+$('track-cancel').addEventListener('click', () => $('modal-add-track').classList.add('hidden'));
+$('track-ok').addEventListener('click', confirmAddTrack);
+$('track-name-input').addEventListener('keydown', e => { if (e.key==='Enter') confirmAddTrack(); });
+$('track-artist-input').addEventListener('keydown', e => { if (e.key==='Enter') $('track-title-input').focus(); });
+$('track-title-input').addEventListener('keydown', e => { if (e.key==='Enter') confirmAddTrack(); });
+
+function confirmAddTrack() {
+  const name   = $('track-name-input').value.trim() || `Track ${S.nextTrackId}`;
+  const artist = $('track-artist-input').value.trim();
+  const title  = $('track-title-input').value.trim();
+  $('modal-add-track').classList.add('hidden');
+  const track = {
+    id: S.nextTrackId++,
+    name, artist, title,
+    fileName: null,
+    bpm: null, bpmMode: 'auto',
+    cues: [],
+    audioUrl: null,
+  };
+  S.tracks.push(track);
+  renderTrackList();
+  selectTrack(track.id);
+  showToast('曲を追加しました: ' + name);
+}
+
+function deleteTrack(id) {
+  const t = S.tracks.find(t=>t.id===id);
+  if (!t) return;
+  if (!confirm(`「${t.name}」を削除しますか？\nCUEシートも削除されます。`)) return;
+  if (t.audioUrl) URL.revokeObjectURL(t.audioUrl);
+  S.tracks = S.tracks.filter(t=>t.id!==id);
+  renderTrackList();
+  if (S.currentTrackId === id) {
+    audio.pause(); audio.src='';
+    S.currentTrackId = null;
+    S.isPlaying = false;
+    if (S.tracks.length > 0) selectTrack(S.tracks[0].id);
+    else showNoTrack();
+  }
+  showToast('曲を削除しました');
+}
+
+function renderTrackList() {
+  const list = $('track-list');
+  list.innerHTML = '';
+  S.tracks.forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'track-item' + (t.id === S.currentTrackId ? ' active' : '');
+    div.dataset.id = t.id;
+    div.innerHTML = `
+      <span class="track-num">${i+1}</span>
+      <div class="track-info">
+        <div class="track-name${t.fileName?'':' no-audio'}">${esc(t.name)}</div>
+        <div class="track-file">${t.fileName ? esc(t.fileName) : '音源未設定'}</div>
+        ${t.bpm ? `<div class="track-bpm">♩${t.bpm} BPM</div>` : ''}
+        <div class="track-cues">${t.cues.length} cues</div>
+      </div>
+      <button class="track-del-btn" data-del="${t.id}">✕</button>`;
+    div.addEventListener('click', e => {
+      if (e.target.dataset.del) { deleteTrack(parseInt(e.target.dataset.del)); return; }
+      selectTrack(t.id);
+    });
+    list.appendChild(div);
+  });
+}
+
+function selectTrack(id) {
+  // save current audio position to previous track
+  const prev = currentTrack();
+  if (prev && S.isPlaying) { audio.pause(); S.isPlaying = false; updatePlayBtn(); }
+
+  S.currentTrackId = id;
+  const t = currentTrack();
+  if (!t) { showNoTrack(); return; }
+
+  // BPM mode restore
+  S.bpmMode = t.bpmMode || 'auto';
+  S.tapTimes = [];
+  applyBpmModeUI();
+
+  // Show transport/table
+  $('no-track-msg').classList.add('hidden');
+  $('transport-section').classList.remove('hidden');
+  $('table-section').classList.remove('hidden');
+  $('add-row-area').classList.remove('hidden');
+
+  // Audio
+  if (t.audioUrl) {
+    audio.src = t.audioUrl;
+    audio.loop = S.loopEnabled;
+    audio.playbackRate = S.playbackRate;
+    $('file-label').classList.add('hidden');
+    $('file-name-display').classList.remove('hidden');
+    $('file-name-display').textContent = t.fileName;
+    $('s-dot').classList.add('on');
+    $('s-text').textContent = t.fileName;
+    $('manual-duration-area').classList.add('hidden');
+    audio.onloadedmetadata = () => { $('duration-label').textContent = fmt(audio.duration); drawFlat(); drawProgress(); };
+  } else {
+    audio.src = '';
+    $('file-label').classList.remove('hidden');
+    $('file-name-display').classList.add('hidden');
+    $('s-dot').classList.remove('on');
+    $('s-text').textContent = '音源なし（内部クロック）';
+    $('manual-duration-area').classList.remove('hidden');
+    $('manual-duration-input').value = t.manualDuration ? fmt(t.manualDuration) : '';
+    $('duration-label').textContent = t.manualDuration ? fmt(t.manualDuration) : '0:00';
+    S.manualTime = 0;
+    $('time-display').textContent = '0:00.0';
+    drawFlat();
+  }
+
+  // BPM display
+  $('bpm-display').textContent = t.bpm || '---';
+  if (t.bpm) {
+    $('beat-sec-value').textContent = (60/t.bpm).toFixed(3)+'s';
+    $('beat-sec-display').classList.remove('hidden');
+  } else {
+    $('beat-sec-display').classList.add('hidden');
+  }
+  if (S.bpmMode==='manual' && t.bpm) $('bpm-manual-input').value = t.bpm;
+
+  // Artist / Title
+  $('track-artist-display').value = t.artist || '';
+  $('track-title-display').value  = t.title  || '';
+
+  renderTable();
+  renderTrackList();
+}
+
+function showNoTrack() {
+  $('no-track-msg').classList.remove('hidden');
+  $('transport-section').classList.add('hidden');
+  $('table-section').classList.add('hidden');
+  $('add-row-area').classList.add('hidden');
+}
+
+// ════════════════════════════════════════════
+//  SAVE FOLDER / PROJECT NAME
+// ════════════════════════════════════════════
+function updateFolderInfo() {
+  $('save-folder-info').textContent = S.dirHandle ? '📂 '+S.dirHandle.name : '📁 保存先未設定';
+}
+$('save-folder-info').addEventListener('click', async () => {
+  try {
+    const h = await window.showDirectoryPicker({mode:'readwrite'});
+    S.dirHandle = h; updateFolderInfo(); showToast('保存先: '+h.name);
+  } catch(e) { if (e.name!=='AbortError') showToast('フォルダ選択に失敗しました'); }
+});
+
+$('project-name-display').addEventListener('click', () => {
+  $('rename-input').value = S.projectName;
+  $('modal-rename').classList.remove('hidden');
+  setTimeout(() => { $('rename-input').focus(); $('rename-input').select(); }, 50);
+});
+$('rename-cancel').addEventListener('click', () => $('modal-rename').classList.add('hidden'));
+$('rename-ok').addEventListener('click', () => {
+  const n = $('rename-input').value.trim(); if (!n) return;
+  S.projectName = n; $('project-name-display').textContent = n;
+  $('modal-rename').classList.add('hidden');
+});
+$('rename-input').addEventListener('keydown', e => { if(e.key==='Enter') $('rename-ok').click(); });
+
+$('btn-startup').addEventListener('click', () => {
+  if (!confirm('TOPに戻りますか？未保存の変更は失われます。')) return;
+  audio.pause(); S.isPlaying = false;
+  if (S.manualTimer) { clearInterval(S.manualTimer); S.manualTimer = null; }
+  S.tracks.forEach(t => { if (t.audioUrl) URL.revokeObjectURL(t.audioUrl); });
+
+  $('app').classList.remove('visible');
+  $('startup-screen').style.display = 'none';
+  $('user-screen').style.display = 'flex';
+  S.currentTrackId = null; S.dirHandle = null; _selectedUser = S.currentUser;
+  renderUserList();
+  $('user-continue-btn').classList.add('active');
+});
+
+// ════════════════════════════════════════════
+//  AUDIO FILE LOAD
+// ════════════════════════════════════════════
+$('audio-file').addEventListener('change', async e => {
+  const t = currentTrack(); if (!t) return;
+  const file = e.target.files[0]; if (!file) return;
+  if (t.audioUrl) URL.revokeObjectURL(t.audioUrl);
+  t.audioUrl = URL.createObjectURL(file);
+  t.fileName = file.name;
+  t.bpm = null; // reset BPM on new audio
+  audio.src = t.audioUrl;
+  audio.playbackRate = S.playbackRate;
+  $('file-label').classList.add('hidden');
+  $('file-name-display').classList.remove('hidden');
+  $('file-name-display').textContent = file.name;
+  $('s-dot').classList.add('on');
+  $('s-text').textContent = file.name;
+  $('bpm-display').textContent = '---';
+  audio.onloadedmetadata = () => {
+    $('duration-label').textContent = fmt(audio.duration);
+    drawFlat(); drawProgress();
+  };
+  renderTrackList();
+  // BPM detection
+  if (S.bpmMode === 'auto') {
+    $('bpm-display').textContent = '…';
+    $('bpm-display').classList.add('bpm-detecting');
+    await tryBPM(file);
+    $('bpm-display').classList.remove('bpm-detecting');
+  }
+  e.target.value = ''; // allow re-selecting same file
+});
+audio.addEventListener('ended', () => { S.isPlaying = false; updatePlayBtn(); });
+
+// ════════════════════════════════════════════
+//  TRANSPORT
+// ════════════════════════════════════════════
+$('btn-play').addEventListener('click', togglePlay);
+$('btn-stop').addEventListener('click', stopAudio);
+$('btn-back1').addEventListener('click',  () => skip(-1));
+$('btn-back5').addEventListener('click',  () => skip(-5));
+$('btn-back10').addEventListener('click', () => skip(-10));
+$('btn-fwd1').addEventListener('click',   () => skip(1));
+$('btn-fwd5').addEventListener('click',   () => skip(5));
+$('btn-fwd10').addEventListener('click',  () => skip(10));
+$('btn-speed-down').addEventListener('click', () => changeSpeed(-0.1));
+$('btn-speed-up').addEventListener('click',   () => changeSpeed(0.1));
+
+function getCurrentTime() {
+  const t = currentTrack();
+  if (t && t.audioUrl) return audio.currentTime;
+  return S.manualTime;
+}
+function updateTimeDisp() {
+  $('time-display').textContent = fmt(getCurrentTime(), true);
+}
+
+function togglePlay() {
+  const t = currentTrack(); if (!t) return;
+  if (t.audioUrl) {
+    if (S.isPlaying) { audio.pause(); S.isPlaying = false; }
+    else { audio.play(); S.isPlaying = true; requestAnimationFrame(animLoop); }
+  } else {
+    if (S.isPlaying) {
+      clearInterval(S.manualTimer); S.manualTimer = null;
+      S.manualTime = getCurrentTime(); S.isPlaying = false;
+    } else {
+      S.manualStartAt = performance.now(); S.manualStartSec = S.manualTime; S.isPlaying = true;
+      S.manualTimer = setInterval(() => {
+        const elapsed = (performance.now() - S.manualStartAt) / 1000;
+        S.manualTime = S.manualStartSec + elapsed * S.playbackRate;
+        const dur = t.manualDuration || 0;
+        if (dur > 0 && S.manualTime >= dur) {
+          if (S.loopEnabled) { S.manualTime=0; S.manualStartAt=performance.now(); S.manualStartSec=0; }
+          else {
+            S.manualTime=dur; S.isPlaying=false;
+            clearInterval(S.manualTimer); S.manualTimer=null;
+            updatePlayBtn(); if(window.syncTouchPlayState) syncTouchPlayState();
+          }
+        }
+        updateTimeDisp(); drawProgress();
+      }, 30);
+      requestAnimationFrame(animLoop);
+    }
+  }
+  updatePlayBtn();
+}
+
+function skip(s) {
+  const t = currentTrack(); if (!t) return;
+  if (t.audioUrl) {
+    audio.currentTime = Math.max(0, Math.min(audio.duration||0, audio.currentTime+s));
+  } else {
+    const dur = t.manualDuration || 99999;
+    S.manualTime = Math.max(0, Math.min(dur, S.manualTime + s));
+    if (S.isPlaying) { S.manualStartAt = performance.now(); S.manualStartSec = S.manualTime; }
+  }
+  updateTimeDisp(); drawProgress();
+}
+function changeSpeed(d) {
+  S.playbackRate = Math.max(0.25, Math.min(2.0, Math.round((S.playbackRate+d)*10)/10));
+  audio.playbackRate = S.playbackRate;
+  $('speed-display').textContent = S.playbackRate.toFixed(1)+'×';
+}
+function updatePlayBtn() {
+  const b = $('btn-play');
+  if (S.isPlaying) { b.textContent='⏸ PAUSE'; b.classList.add('playing'); }
+  else { b.textContent='▶ PLAY'; b.classList.remove('playing'); }
+}
+function animLoop() {
+  if (!S.isPlaying) return;
+  updateTimeDisp(); drawProgress();
+  requestAnimationFrame(animLoop);
+}
+
+function stopAudio() {
+  if (S.manualTimer) { clearInterval(S.manualTimer); S.manualTimer = null; }
+  audio.pause(); audio.currentTime = 0;
+  S.manualTime = 0; S.isPlaying = false;
+  updatePlayBtn(); updateTimeDisp(); drawProgress();
+}
+
+// ════════════════════════════════════════════
+//  CANVAS
+// ════════════════════════════════════════════
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = Math.max(100, rect.width - 68);
+  canvas.height = 40;
+  drawFlat(); drawProgress();
+}
+window.addEventListener('resize', resizeCanvas);
+function drawFlat() {
+  const w=canvas.width, h=canvas.height;
+  cx.clearRect(0,0,w,h);
+  cx.fillStyle='#0a0c0f'; cx.fillRect(0,0,w,h);
+  cx.strokeStyle='#1e2535'; cx.lineWidth=1;
+  for (let x=0;x<w;x+=40){cx.beginPath();cx.moveTo(x+.5,0);cx.lineTo(x+.5,h);cx.stroke();}
+  cx.beginPath();cx.moveTo(0,h/2);cx.lineTo(w,h/2);cx.stroke();
+  drawCueMarkers();
+}
+function drawProgress() {
+  drawFlat();
+  const t = currentTrack(); if (!t) return;
+  let dur = 0;
+  if (t.audioUrl) { dur = isNaN(audio.duration)?0:audio.duration; }
+  else { dur = t.manualDuration||0; }
+  if (dur <= 0) return;
+  const cur = getCurrentTime();
+  const w=canvas.width, h=canvas.height, p=cur/dur;
+  cx.fillStyle='rgba(0,212,255,.08)'; cx.fillRect(0,0,p*w,h);
+  const x=p*w;
+  cx.strokeStyle='#00d4ff'; cx.lineWidth=2;
+  cx.shadowBlur=8; cx.shadowColor='#00d4ff';
+  cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,h);cx.stroke();
+  cx.shadowBlur=0;
+}
+function drawCueMarkers() {
+  const t = currentTrack(); if (!t) return;
+  const dur = t.audioUrl ? (isNaN(audio.duration)?0:audio.duration) : (t.manualDuration||0);
+  if (dur <= 0) return;
+  const w=canvas.width, h=canvas.height;
+  t.cues.forEach(c => {
+    if (c.timestamp===null) return;
+    const x=(c.timestamp/dur)*w;
+    cx.strokeStyle='rgba(245,166,35,.7)'; cx.lineWidth=1;
+    cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,h);cx.stroke();
+    cx.fillStyle='rgba(245,166,35,.9)';
+    cx.font='9px Share Tech Mono';
+    cx.fillText(c.qno||'', x+2, 10);
+  });
+}
+
+// ════════════════════════════════════════════
+//  BPM
+// ════════════════════════════════════════════
+$('btn-bpm-auto').addEventListener('click', () => setBpmMode('auto'));
+$('btn-bpm-tap').addEventListener('click',  () => setBpmMode('tap'));
+$('btn-bpm-manual').addEventListener('click', () => setBpmMode('manual'));
+$('tap-btn').addEventListener('click', tapBPM);
+$('bpm-set-btn').addEventListener('click', applyManualBPM);
+$('bpm-manual-input').addEventListener('keydown', e => { if(e.key==='Enter') applyManualBPM(); });
+
+function setBpmMode(mode) {
+  S.bpmMode = mode;
+  const t = currentTrack(); if (t) t.bpmMode = mode;
+  applyBpmModeUI();
+  if (mode==='tap') { S.tapTimes=[]; $('bpm-display').textContent = currentTrack()?.bpm||'TAP...'; }
+  if (mode==='manual' && currentTrack()?.bpm) $('bpm-manual-input').value = currentTrack().bpm;
+}
+function applyBpmModeUI() {
+  ['btn-bpm-auto','btn-bpm-tap','btn-bpm-manual'].forEach(id => $(id).classList.remove('active'));
+  $('tap-btn').classList.add('hidden');
+  $('bpm-manual-row').classList.add('hidden');
+  if (S.bpmMode==='auto')   { $('btn-bpm-auto').classList.add('active'); }
+  if (S.bpmMode==='tap')    { $('btn-bpm-tap').classList.add('active'); $('tap-btn').classList.remove('hidden'); }
+  if (S.bpmMode==='manual') { $('btn-bpm-manual').classList.add('active'); $('bpm-manual-row').classList.remove('hidden'); }
+}
+function tapBPM() {
+  const now = performance.now();
+  S.tapTimes.push(now);
+  if (S.tapTimes.length>8) S.tapTimes.shift();
+  if (S.tapTimes.length>=2) {
+    const iv=[]; for(let i=1;i<S.tapTimes.length;i++) iv.push(S.tapTimes[i]-S.tapTimes[i-1]);
+    const avg = iv.reduce((a,b)=>a+b)/iv.length;
+    const bpm = Math.round(60000/avg);
+    applyBPM(bpm);
+  }
+}
+function applyManualBPM() {
+  const v = parseInt($('bpm-manual-input').value);
+  if (!v||v<20||v>300) { flashRed('bpm-manual-input'); return; }
+  applyBPM(v);
+  showToast('BPM: '+v+' を設定しました');
+}
+function applyBPM(bpm) {
+  const t = currentTrack(); if (!t) return;
+  t.bpm = bpm;
+  $('bpm-display').textContent = bpm;
+  // 1拍の秒数表示
+  const beatSec = (60/bpm).toFixed(3);
+  $('beat-sec-value').textContent = beatSec + 's';
+  $('beat-sec-display').classList.remove('hidden');
+  recalcAllCounts();
+  renderTable();
+  renderTrackList();
+}
+
+// ── BPM自動検出: Autocorrelation法 ──────────
+async function tryBPM(file) {
+  try {
+    const ac  = new (window.AudioContext||window.webkitAudioContext)();
+    const ab  = await file.arrayBuffer();
+    const buf = await ac.decodeAudioData(ab);
+    ac.close();
+    const bpm = detectBPM(buf);
+    const t   = currentTrack();
+    if (bpm && t && S.bpmMode==='auto') {
+      applyBPM(bpm);
+      showToast('BPM自動検出: '+bpm);
+    } else if (!bpm) {
+      $('bpm-display').textContent = '---';
+      showToast('BPM自動検出できませんでした　手動/TAPで設定してください');
+    }
+  } catch(e) {
+    $('bpm-display').textContent = '---';
+    console.warn('BPM detection error', e);
+  }
+}
+
+function detectBPM(audioBuffer) {
+  const sr   = audioBuffer.sampleRate;
+  const data = audioBuffer.getChannelData(0);
+
+  // 1) 最初の30秒、ダウンサンプル (step=4) で処理量を削減
+  const ANALYZE_SEC = Math.min(30, audioBuffer.duration);
+  const STEP = 4;
+  const len  = Math.floor(sr * ANALYZE_SEC / STEP);
+  const sig  = new Float32Array(len);
+  for (let i=0; i<len; i++) sig[i] = data[i*STEP];
+
+  // 2) オンセット強度: 隣接サンプルの二乗差分（簡易オンセット関数）
+  const onset = new Float32Array(len);
+  for (let i=1; i<len; i++) {
+    const d = sig[i]-sig[i-1];
+    onset[i] = d*d;
+  }
+
+  // 3) 自己相関 (BPM 50〜220の範囲のラグのみ計算)
+  const effectiveSr = sr / STEP;
+  const lagMin = Math.floor(effectiveSr * 60 / 220); // 220 BPM
+  const lagMax = Math.floor(effectiveSr * 60 / 50);  // 50 BPM
+  const corr   = new Float32Array(lagMax+1);
+
+  for (let lag=lagMin; lag<=lagMax; lag++) {
+    let sum = 0;
+    const n = len - lag;
+    for (let i=0; i<n; i++) sum += onset[i]*onset[i+lag];
+    corr[lag] = sum / n;
+  }
+
+  // 4) 最大ラグを探す
+  let bestLag = lagMin, bestVal = 0;
+  for (let lag=lagMin; lag<=lagMax; lag++) {
+    if (corr[lag] > bestVal) { bestVal = corr[lag]; bestLag = lag; }
+  }
+
+  // 5) BPM計算（ハーモニック補正: 半分/2倍が強ければそちらを採用）
+  let bpm = Math.round(effectiveSr * 60 / bestLag);
+
+  // ハーモニック：もし半分のBPMの自己相関が強ければそちら採用
+  const halfLag = bestLag * 2;
+  if (halfLag <= lagMax && corr[halfLag] > bestVal * 0.8) {
+    bpm = Math.round(effectiveSr * 60 / halfLag);
+  }
+  // 2倍: テンポが速すぎる場合
+  const dblLag = Math.round(bestLag / 2);
+  if (dblLag >= lagMin && corr[dblLag] > bestVal * 0.8) {
+    bpm = Math.round(effectiveSr * 60 / dblLag);
+  }
+
+  return (bpm >= 50 && bpm <= 220) ? bpm : null;
+}
+
+// ════════════════════════════════════════════
+//  COUNT CALCULATION
+// ════════════════════════════════════════════
+function calcMeasures(secStart, secEnd, bpm) {
+  if (!bpm||bpm<=0||secEnd===null||secEnd<=secStart) return null;
+  const secPerBeat = 60/bpm;
+  const totalBeats = Math.round((secEnd-secStart)/secPerBeat);
+  if (totalBeats<=0) return null;
+  const measures = Math.floor(totalBeats/4);
+  const remBeats = totalBeats%4;
+  if (measures===0) return remBeats>0 ? `4/${remBeats}` : null;
+
+  // 8小節ごとにブロック化
+  const parts=[];
+  let rem = measures;
+  while (rem>0) { parts.push(String(Math.min(rem,8))); rem-=8; }
+  if (remBeats>0) parts.push(`4/${remBeats}`);
+  return parts.join(' ');
+}
+
+function recalcAllCounts() {
+  const t = currentTrack(); if (!t||!t.bpm) return;
+  t.cues.forEach((cue,i) => {
+    if (cue.timestamp===null) return;
+    if (cue._autoCount===false) return;
+    let nextTs = null;
+    for (let j=i+1;j<t.cues.length;j++) { if(t.cues[j].timestamp!==null){nextTs=t.cues[j].timestamp;break;} }
+    if (nextTs===null && !isNaN(audio.duration)) nextTs = audio.duration;
+    const m = calcMeasures(cue.timestamp, nextTs, t.bpm);
+    if (m!==null) { cue.count=m; cue._autoCount=true; }
+  });
+}
+
+// ════════════════════════════════════════════
+//  CUE RECORD
+// ════════════════════════════════════════════
+$('cue-record-btn').addEventListener('mousedown', recordCue);
+
+function recordCue(insertAfterIdx) {
+  const t = currentTrack(); if (!t) return;
+  const ts = getCurrentTime();
+  const btn = $('cue-record-btn');
+  btn.classList.add('flash'); setTimeout(()=>btn.classList.remove('flash'),180);
+
+  if (insertAfterIdx !== undefined && insertAfterIdx >= 0) {
+    // 割り込み挿入：指定インデックスの直後に新しいCUEを挿入
+    const newCue = { id:S.nextCueId++, qno:'', section:'', count:'', timestamp:ts, memo:'', _autoCount:null };
+    t.cues.splice(insertAfterIdx + 1, 0, newCue);
+    recalcAllCounts();
+    renderTable(); drawProgress(); renderTrackList();
+    showToast(`Q${insertAfterIdx+1}の後に割り込み記録: ${fmt(ts,true)}`);
+    return;
+  }
+
+  let target = t.cues.find(c=>c.timestamp===null);
+  if (!target) {
+    target = { id:S.nextCueId++, qno:'', section:'', count:'', timestamp:ts, memo:'', _autoCount:null };
+    t.cues.push(target);
+  } else {
+    target.timestamp = ts;
+  }
+  recalcAllCounts();
+  renderTable(); drawProgress(); renderTrackList();
+  showToast('CUE記録: '+fmt(ts,true));
+}
+
+// ════════════════════════════════════════════
+//  TABLE
+// ════════════════════════════════════════════
+function renderTable() {
+  const t = currentTrack();
+  tbody.innerHTML = '';
+  if (!t) { $('cue-count').textContent='0行'; return; }
+  t.cues.forEach((cue,idx) => {
+    const tr = document.createElement('tr');
+    tr.className='cue-row'; tr.dataset.id=cue.id;
+    const tsStr   = cue.timestamp!==null?fmt(cue.timestamp):'---';
+    const tsClass = cue.timestamp!==null?'ts-val':'ts-val empty';
+    const countIsAuto = cue._autoCount===true;
+    const countClass  = 'cell-input count-input'+(countIsAuto?' count-auto':'');
+    tr.innerHTML=`
+      <td class="row-num">${idx+1}</td>
+      <td><input class="cell-input qno-input" data-f="qno" value="${esc(cue.qno)}" placeholder="Q${idx+1}"></td>
+      <td><div class="section-combo">
+        <input class="cell-input" data-f="section" value="${esc(cue.section)}" placeholder="セクション名" list="section-datalist-${cue.id}" autocomplete="off">
+        <datalist id="section-datalist-${cue.id}">${S.sectionPresets.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
+      </div></td>
+      <td><div class="count-cell">
+        <input class="${countClass}" data-f="count" value="${esc(cue.count)}" placeholder="---" title="手動入力可">
+        ${countIsAuto?'<span class="count-badge">AUTO</span>':''}
+      </div></td>
+      <td><div class="ts-cell"><span class="${tsClass}" data-id="${cue.id}">${tsStr}</span></div></td>
+      <td><input class="cell-input" data-f="memo" value="${esc(cue.memo)}" placeholder="メモ..."></td>
+      <td><button class="ins-btn" data-ins="${idx}" title="この行の直後に現在時刻でCUEを割り込み記録">INS</button><button class="del-btn">DEL</button></td>`;
+    tbody.appendChild(tr);
+    tr.querySelectorAll('.cell-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const c = t.cues.find(c=>c.id===cue.id); if(!c) return;
+        c[e.target.dataset.f] = e.target.value;
+        if (e.target.dataset.f==='count') {
+          c._autoCount = false;
+          // 色変更なし: count-autoクラスを外すだけ
+          inp.classList.remove('count-auto');
+        }
+      });
+      inp.addEventListener('keydown', e => { if(e.key==='Enter') e.target.blur(); if(e.key===' ') e.stopPropagation(); });
+    });
+    tr.querySelector('.ts-val').addEventListener('click', () => {
+      if (cue.timestamp===null) return;
+      audio.currentTime=cue.timestamp; updateTimeDisp(); drawProgress();
+      tr.classList.add('playing-from'); setTimeout(()=>tr.classList.remove('playing-from'),2000);
+      showToast(`Q${cue.qno||idx+1} → ${fmt(cue.timestamp)}`);
+    });
+    tr.querySelector('.ins-btn').addEventListener('click', () => {
+      recordCue(idx);
+    });
+    tr.querySelector('.del-btn').addEventListener('click', () => {
+      if (!confirm(`行 ${idx+1} を削除しますか？`)) return;
+      t.cues = t.cues.filter(c=>c.id!==cue.id);
+      recalcAllCounts(); renderTable(); drawProgress(); renderTrackList();
+    });
+  });
+  $('cue-count').textContent = t.cues.length+'行';
+}
+
+$('add-row-btn').addEventListener('click', () => {
+  const t = currentTrack(); if (!t) return;
+  t.cues.push({id:S.nextCueId++,qno:'',section:'',count:'',timestamp:null,memo:'',_autoCount:null});
+  renderTable();
+  tbody.lastElementChild?.querySelector('[data-f="section"]')?.focus();
+});
+
+// Artist / Title インライン編集
+['track-artist-display','track-title-display'].forEach(id => {
+  $(id).addEventListener('input', () => {
+    const t = currentTrack(); if (!t) return;
+    t.artist = $('track-artist-display').value;
+    t.title  = $('track-title-display').value;
+  });
+  $(id).addEventListener('keydown', e => { if (e.key===' ') e.stopPropagation(); });
+});
+
+// RESTART: モーダルで開始位置を選択してリセット
+$('btn-restart').addEventListener('click', () => {
+  const t = currentTrack(); if (!t) return;
+  // ラジオをリセット
+  document.querySelector('input[name="restart-mode"][value="all"]').checked = true;
+  $('restart-qno-field').classList.add('hidden');
+  $('restart-sec-field').classList.add('hidden');
+  $('restart-qno-input').value = '';
+  $('restart-sec-input').value = '';
+  $('modal-restart').classList.remove('hidden');
+});
+
+// ラジオ切り替えで入力欄を表示/非表示
+document.querySelectorAll('input[name="restart-mode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    $('restart-qno-field').classList.toggle('hidden', r.value !== 'qno');
+    $('restart-sec-field').classList.toggle('hidden', r.value !== 'sec');
+  });
+});
+
+$('restart-cancel').addEventListener('click', () => $('modal-restart').classList.add('hidden'));
+$('restart-ok').addEventListener('click', () => {
+  const t = currentTrack(); if (!t) return;
+  const mode = document.querySelector('input[name="restart-mode"]:checked').value;
+
+  let startIdx = 0; // デフォルト：先頭から全部
+
+  if (mode === 'qno') {
+    const qval = $('restart-qno-input').value.trim();
+    if (!qval) { flashRed('restart-qno-input'); return; }
+    // Q No.が一致する行のインデックスを探す
+    const idx = t.cues.findIndex(c => String(c.qno).trim() === qval);
+    if (idx === -1) { showToast(`Q No. "${qval}" が見つかりません`); return; }
+    startIdx = idx;
+  } else if (mode === 'sec') {
+    const sval = $('restart-sec-input').value.trim();
+    if (!sval) { flashRed('restart-sec-input'); return; }
+    // "1:30" または "90.5" 形式を秒に変換
+    let sec;
+    if (sval.includes(':')) {
+      const parts = sval.split(':');
+      sec = parseFloat(parts[0]) * 60 + parseFloat(parts[1] || 0);
+    } else {
+      sec = parseFloat(sval);
+    }
+    if (isNaN(sec)) { flashRed('restart-sec-input'); return; }
+    // その秒数以降にタイムスタンプを持つ最初のCUEを探す
+    const idx = t.cues.findIndex(c => c.timestamp !== null && c.timestamp >= sec);
+    if (idx === -1) { showToast(`${sval} 秒以降にCUEが見つかりません`); return; }
+    startIdx = idx;
+  }
+
+  if (!confirm(`Q ${startIdx+1} 行目以降のCUE記録をリセットしますか？`)) return;
+
+  t.cues.slice(startIdx).forEach(c => {
+    c.timestamp  = null;
+    c.count      = '';
+    c._autoCount = null;
+  });
+
+  $('modal-restart').classList.add('hidden');
+  renderTable(); drawProgress(); renderTrackList();
+  showToast(`${startIdx+1}行目以降のCUE記録をリセットしました`);
+});
+
+// 曲の長さ手動設定（音源なし用）
+$('manual-duration-set').addEventListener('click', applyManualDuration);
+$('manual-duration-input').addEventListener('keydown', e => { if(e.key==='Enter') applyManualDuration(); });
+function applyManualDuration() {
+  const t = currentTrack(); if (!t) return;
+  const val = $('manual-duration-input').value.trim();
+  let sec;
+  if (val.includes(':')) {
+    const parts = val.split(':');
+    sec = parseFloat(parts[0])*60 + parseFloat(parts[1]||0);
+  } else { sec = parseFloat(val); }
+  if (isNaN(sec) || sec <= 0) { flashRed('manual-duration-input'); return; }
+  t.manualDuration = sec;
+  $('duration-label').textContent = fmt(sec);
+  drawFlat(); drawProgress();
+  showToast('曲の長さ: ' + fmt(sec) + ' に設定しました');
+}
+
+// canvas click（音源なし対応）
+// canvas クリック（YT対応）
+canvas.addEventListener('click', e => {
+  const t = currentTrack(); if (!t) return;
+  let dur = 0;
+  if (t.audioUrl) { dur = isNaN(audio.duration)?0:audio.duration; }
+  else { dur = t.manualDuration||0; }
+  if (dur <= 0) return;
+  const r = canvas.getBoundingClientRect();
+  const newTime = ((e.clientX-r.left)/r.width)*dur;
+  if (t.audioUrl) {
+    audio.currentTime = newTime;
+  } else {
+    S.manualTime = newTime;
+    if (S.isPlaying) { S.manualStartAt = performance.now(); S.manualStartSec = S.manualTime; }
+  }
+  updateTimeDisp(); drawProgress();
+});
+
+// ループボタン
+$('btn-loop').addEventListener('click', () => {
+  S.loopEnabled = !S.loopEnabled;
+  audio.loop = S.loopEnabled;
+  $('btn-loop').classList.toggle('loop-on', S.loopEnabled);
+  showToast('ループ: ' + (S.loopEnabled ? 'ON' : 'OFF'));
+});
+
+// ════════════════════════════════════════════
+//  CLOUD SYNC (GitHub Gist)
+// ════════════════════════════════════════════
+
+const CLOUD_TOKEN_KEY = () => 'stagelog_cloud_token_' + (S.currentUser || 'default');
+const CLOUD_GIST_KEY  = () => 'stagelog_cloud_gist_'  + (S.currentUser || 'default');
+const GIST_FILENAME   = 'stagelog_project.json';
+
+function cloudLoadSettings() {
+  const token  = localStorage.getItem(CLOUD_TOKEN_KEY()) || '';
+  const gistId = localStorage.getItem(CLOUD_GIST_KEY())  || '';
+  $('cloud-token-input').value = token;
+  $('cloud-gist-id').value     = gistId || '（初回保存時に自動作成）';
+  updateCloudStatus(token ? (gistId ? 'ok' : 'token-only') : 'none');
+}
+
+function updateCloudStatus(state, msg) {
+  const dot  = $('cloud-status-dot');
+  const text = $('cloud-status-text');
+  const btn  = $('btn-cloud');
+  dot.className  = 'cloud-status-dot';
+  btn.className  = 'header-btn cloud-btn';
+  if (state === 'ok')         { dot.classList.add('ok');      text.textContent = msg || '同期済み';           btn.classList.add('synced');  }
+  else if (state === 'syncing'){ dot.classList.add('syncing'); text.textContent = msg || '同期中...';          btn.classList.add('syncing'); }
+  else if (state === 'error') { dot.classList.add('error');   text.textContent = msg || 'エラー';             }
+  else if (state === 'token-only'){ dot.classList.add('ok');  text.textContent = 'Token設定済み・Gist未作成'; btn.classList.add('synced');  }
+  else                        {                               text.textContent = '未設定';                    }
+}
+
+// モーダルを開く
+$('btn-cloud').addEventListener('click', () => {
+  cloudLoadSettings();
+  $('modal-cloud').classList.remove('hidden');
+});
+$('cloud-modal-close').addEventListener('click', () => $('modal-cloud').classList.add('hidden'));
+
+// Token 表示/非表示
+$('cloud-token-toggle').addEventListener('click', () => {
+  const inp = $('cloud-token-input');
+  if (inp.type === 'password') { inp.type = 'text';     $('cloud-token-toggle').textContent = '隠す'; }
+  else                         { inp.type = 'password'; $('cloud-token-toggle').textContent = '表示'; }
+});
+
+// 設定クリア
+$('cloud-clear-btn').addEventListener('click', () => {
+  if (!confirm('クラウド設定（Token・Gist ID）をクリアしますか？')) return;
+  localStorage.removeItem(CLOUD_TOKEN_KEY());
+  localStorage.removeItem(CLOUD_GIST_KEY());
+  $('cloud-token-input').value = '';
+  $('cloud-gist-id').value = '（初回保存時に自動作成）';
+  updateCloudStatus('none');
+  showToast('クラウド設定をクリアしました');
+});
+
+// ── Gistへ保存 ──
+$('cloud-save-btn').addEventListener('click', () => saveToGist(true));
+
+async function saveToGist(fromModal = false) {
+  const token = ($('cloud-token-input').value || localStorage.getItem(CLOUD_TOKEN_KEY()) || '').trim();
+  if (!token) {
+    if (fromModal) { flashRed('cloud-token-input'); showToast('Tokenを入力してください'); }
+    return false;
+  }
+  // Tokenを保存
+  localStorage.setItem(CLOUD_TOKEN_KEY(), token);
+
+  const data = {
+    projectName: S.projectName,
+    tracks: S.tracks.map(({audioUrl,...rest})=>rest),
+    nextTrackId: S.nextTrackId,
+    nextCueId: S.nextCueId,
+    pdfFont: S.pdfFont,
+    sectionPresets: S.sectionPresets,
+    savedAt: new Date().toISOString(),
+    savedBy: S.currentUser || 'default',
+  };
+  const json = JSON.stringify(data, null, 2);
+
+  updateCloudStatus('syncing', '保存中...');
+  let gistId = localStorage.getItem(CLOUD_GIST_KEY()) || '';
+
+  try {
+    let res, body;
+    if (gistId) {
+      // 既存Gistを更新（PATCH）
+      res = await fetch(`https://api.github.com/gists/${gistId}`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { [GIST_FILENAME]: { content: json } } }),
+      });
+    } else {
+      // 新規Gist作成（POST）
+      res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: `STAGELOG — ${S.projectName} (${S.currentUser || 'default'})`,
+          public: false,
+          files: { [GIST_FILENAME]: { content: json } },
+        }),
+      });
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+
+    body = await res.json();
+    gistId = body.id;
+    localStorage.setItem(CLOUD_GIST_KEY(), gistId);
+    $('cloud-gist-id').value = gistId;
+
+    updateCloudStatus('ok', '保存完了 ' + new Date().toLocaleTimeString('ja-JP'));
+    showToast('☁ クラウドに保存しました');
+    return true;
+
+  } catch(e) {
+    updateCloudStatus('error', 'エラー: ' + e.message);
+    showToast('クラウド保存に失敗: ' + e.message);
+    return false;
+  }
+}
+
+// ── Gistから読み込み ──
+$('cloud-load-btn').addEventListener('click', loadFromGist);
+
+async function loadFromGist() {
+  const token  = ($('cloud-token-input').value || localStorage.getItem(CLOUD_TOKEN_KEY()) || '').trim();
+  const gistId = (localStorage.getItem(CLOUD_GIST_KEY()) || '').trim();
+
+  if (!token)  { flashRed('cloud-token-input'); showToast('Tokenを入力してください'); return; }
+  if (!gistId) { showToast('Gist IDがありません。先にクラウドへ保存してください'); return; }
+
+  localStorage.setItem(CLOUD_TOKEN_KEY(), token);
+  updateCloudStatus('syncing', '読み込み中...');
+
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    const body = await res.json();
+    const file = body.files[GIST_FILENAME];
+    if (!file) throw new Error('ファイルが見つかりません');
+
+    const data = JSON.parse(file.content);
+    if (!confirm(`クラウドのデータを読み込みます。\n保存日時: ${data.savedAt ? new Date(data.savedAt).toLocaleString('ja-JP') : '不明'}\n保存者: ${data.savedBy || '不明'}\n\n現在の作業内容は上書きされます。続けますか？`)) {
+      updateCloudStatus('ok', '読み込みキャンセル'); return;
+    }
+
+    // データを反映
+    S.projectName = data.projectName || S.projectName;
+    S.tracks      = (data.tracks||[]).map(t=>({...t, audioUrl:null}));
+    S.nextTrackId = data.nextTrackId || (Math.max(0,...S.tracks.map(t=>t.id))+1);
+    S.nextCueId   = data.nextCueId   || 1;
+    S.pdfFont     = data.pdfFont     || S.pdfFont;
+    if (data.sectionPresets) S.sectionPresets = data.sectionPresets;
+
+    $('project-name-display').textContent = S.projectName;
+    renderTrackList();
+    if (S.tracks.length > 0) selectTrack(S.tracks[0].id); else showNoTrack();
+
+    updateCloudStatus('ok', '読み込み完了 ' + new Date().toLocaleTimeString('ja-JP'));
+    $('modal-cloud').classList.add('hidden');
+    showToast('☁ クラウドから読み込みました');
+
+  } catch(e) {
+    updateCloudStatus('error', 'エラー: ' + e.message);
+    showToast('クラウド読み込みに失敗: ' + e.message);
+  }
+}
+
+// 💾 JSONボタン押下時にクラウドへも同期（Tokenが設定済みの場合）
+async function saveAndSync() {
+  await saveJSON();
+  const token = localStorage.getItem(CLOUD_TOKEN_KEY());
+  if (token) await saveToGist(false);
+}
+
+// ════════════════════════════════════════════
+//  SAVE / EXPORT
+// ════════════════════════════════════════════
+$('btn-save-json').addEventListener('click', saveAndSync);
+document.addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveAndSync();} });
+
+async function saveJSON() {
+  const data = {
+    projectName: S.projectName,
+    tracks: S.tracks.map(({audioUrl,...rest})=>rest),
+    nextTrackId: S.nextTrackId,
+    nextCueId: S.nextCueId,
+    pdfFont: S.pdfFont,
+    sectionPresets: S.sectionPresets,
+    savedAt: new Date().toISOString(),
+  };
+  const json  = JSON.stringify(data,null,2);
+  const fname = safeName(S.projectName)+'.json';
+  if (S.dirHandle) {
+    try {
+      const fh = await S.dirHandle.getFileHandle(fname,{create:true});
+      const w  = await fh.createWritable();
+      await w.write(json); await w.close();
+      showToast('保存しました: '+fname); return;
+    } catch(e) { console.warn('FS save failed',e); }
+  }
+  downloadBlob(new Blob([json],{type:'application/json'}), fname);
+  showToast('JSONを保存しました');
+}
+
+$('btn-export-csv').addEventListener('click', async () => {
+  const t = currentTrack();
+  if (!t) { showToast('曲が選択されていません'); return; }
+  const header='No.,Q No.,SECTION,Count,Timestamp,Memo';
+  const rows=t.cues.map((c,i)=>`${i+1},${csvQ(c.qno)},${csvQ(c.section)},${csvQ(c.count)},${c.timestamp!==null?fmt(c.timestamp):''},${csvQ(c.memo)}`);
+  const csv='\uFEFF'+header+'\n'+rows.join('\n');
+  const fname=safeName(S.projectName)+'_'+safeName(t.name)+'.csv';
+  if (S.dirHandle) {
+    try {
+      const fh=await S.dirHandle.getFileHandle(fname,{create:true});
+      const w=await fh.createWritable(); await w.write(csv); await w.close();
+      showToast('CSV保存: '+fname); return;
+    } catch(e){console.warn(e);}
+  }
+  downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8;'}),fname);
+  showToast('CSVを出力しました');
+});
+
+$('btn-export-pdf').addEventListener('click', () => {
+  const t = currentTrack();
+  if (!t) { showToast('曲が選択されていません'); return; }
+
+  const ROWS_PER_PAGE = 20;
+  const artist     = t.artist || '';
+  const title      = t.title  || t.name || '';
+  const bpmStr     = t.bpm ? `${t.bpm} BPM` : '---';
+  const durStr     = (!isNaN(audio.duration) && t.audioUrl) ? fmt(audio.duration) : '---';
+  const totalCues  = t.cues.length;
+  const totalPages = Math.max(1, Math.ceil(totalCues / ROWS_PER_PAGE));
+
+  // フォント設定をstyleタグで注入
+  const pdfFont = S.pdfFont || 'Noto Sans JP';
+  let fontStyle = document.getElementById('pdf-font-style');
+  if (!fontStyle) {
+    fontStyle = document.createElement('style');
+    fontStyle.id = 'pdf-font-style';
+    document.head.appendChild(fontStyle);
+  }
+  fontStyle.textContent = `@media print { body, .pdf-page { font-family: '${pdfFont}', sans-serif !important; } }`;
+
+  const container = $('pdf-pages');
+  container.innerHTML = '';
+
+  for (let p = 0; p < totalPages; p++) {
+    const slice   = t.cues.slice(p * ROWS_PER_PAGE, (p+1) * ROWS_PER_PAGE);
+    const pageNum = p + 1;
+
+    const dataRows = slice.map((c, si) => {
+      const pageOffset = p * ROWS_PER_PAGE;
+      // qnoが空なら行番号（全体通し）を自動表示
+      const qnoDisplay = c.qno.trim() !== '' ? c.qno : String(pageOffset + si + 1);
+      return `
+      <tr>
+        <td class="pdf-td-qno">${escPdf(qnoDisplay)}</td>
+        <td class="pdf-td-sec">${escPdf(c.section)}</td>
+        <td class="pdf-td-count">${escPdf(c.count)}</td>
+        <td class="pdf-td-memo">${escPdf(c.memo)}</td>
+      </tr>`;
+    }).join('');
+
+    const padCount    = ROWS_PER_PAGE - slice.length;
+    const paddingRows = Array(padCount).fill(
+      `<tr class="pdf-empty-row"><td>&nbsp;</td><td></td><td></td><td></td></tr>`
+    ).join('');
+
+    const div = document.createElement('div');
+    div.className = 'pdf-page';
+    div.innerHTML = `
+      <div class="pdf-page-header">
+        <div class="pdf-h-cell">
+          <div class="pdf-h-label">TITLE</div>
+          <div class="pdf-h-value">${escPdf(title) || '---'}</div>
+        </div>
+        <div class="pdf-h-cell">
+          <div class="pdf-h-label">ARTIST</div>
+          <div class="pdf-h-value">${escPdf(artist) || '---'}</div>
+        </div>
+        <div class="pdf-h-cell pdf-h-sm">
+          <div class="pdf-h-label">BPM</div>
+          <div class="pdf-h-value">♩ ${escPdf(bpmStr)}</div>
+        </div>
+        <div class="pdf-h-cell pdf-h-sm">
+          <div class="pdf-h-label">DURATION</div>
+          <div class="pdf-h-value">${escPdf(durStr)}</div>
+          <div class="pdf-h-page">${pageNum} / ${totalPages}</div>
+        </div>
+      </div>
+      <div class="pdf-table-wrap">
+        <table class="pdf-cue-table">
+          <colgroup>
+            <col class="pdf-col-qno"><col class="pdf-col-sec">
+            <col class="pdf-col-count"><col class="pdf-col-memo">
+          </colgroup>
+          <thead><tr>
+            <th>Q No.</th><th>SECTION</th><th>Count</th><th>Memo</th>
+          </tr></thead>
+          <tbody>${dataRows}${paddingRows}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(div);
+  }
+
+  setTimeout(() => window.print(), 120);
+});
+
+function escPdf(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ════════════════════════════════════════════
+//  PDF FONT SETTINGS
+// ════════════════════════════════════════════
+const PDF_FONTS = [
+  { key:'Noto Sans JP',    label:'Noto Sans JP',    google:true  },
+  { key:'Noto Serif JP',   label:'Noto Serif JP',   google:true  },
+  { key:'M PLUS 1p',       label:'M PLUS 1p',       google:true  },
+  { key:'M PLUS Rounded 1c',label:'M PLUS Round',   google:true  },
+  { key:'Zen Kaku Gothic New',label:'Zen Kaku Gothic',google:true},
+  { key:'BIZ UDPGothic',   label:'BIZ UDP Gothic',  google:true  },
+  { key:'Kosugi Maru',     label:'Kosugi Maru',     google:true  },
+  { key:'sans-serif',      label:'システムゴシック', google:false },
+  { key:'serif',           label:'システム明朝',     google:false },
+];
+let _selectedFont = null;
+
+$('btn-pdf-settings').addEventListener('click', () => {
+  _selectedFont = S.pdfFont;
+  renderFontGrid();
+  $('modal-pdf-settings').classList.remove('hidden');
+});
+$('pdf-settings-cancel').addEventListener('click', () => $('modal-pdf-settings').classList.add('hidden'));
+$('pdf-settings-ok').addEventListener('click', () => {
+  if (_selectedFont) {
+    S.pdfFont = _selectedFont;
+    showToast('PDFフォント: ' + _selectedFont);
+  }
+  $('modal-pdf-settings').classList.add('hidden');
+});
+
+function renderFontGrid() {
+  // Google Fontsを動的ロード
+  PDF_FONTS.filter(f=>f.google).forEach(f => {
+    const id = 'gf-' + f.key.replace(/\s/g,'-');
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id; link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(f.key)}&display=swap`;
+      document.head.appendChild(link);
+    }
+  });
+  const grid = $('font-grid');
+  grid.innerHTML = '';
+  PDF_FONTS.forEach(f => {
+    const btn = document.createElement('div');
+    btn.className = 'font-opt' + (f.key === _selectedFont ? ' selected' : '');
+    btn.style.fontFamily = `'${f.key}', sans-serif`;
+    btn.textContent = f.label;
+    btn.addEventListener('click', () => {
+      _selectedFont = f.key;
+      $('font-preview').style.fontFamily = `'${f.key}', sans-serif`;
+      grid.querySelectorAll('.font-opt').forEach(el => el.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    grid.appendChild(btn);
+  });
+  $('font-preview').style.fontFamily = `'${_selectedFont}', sans-serif`;
+}
+
+// ════════════════════════════════════════════
+//  SECTION PRESETS
+// ════════════════════════════════════════════
+$('btn-section-presets').addEventListener('click', () => {
+  renderPresetList();
+  $('modal-section-presets').classList.remove('hidden');
+  setTimeout(() => $('preset-add-input').focus(), 50);
+});
+$('section-presets-close').addEventListener('click', () => $('modal-section-presets').classList.add('hidden'));
+
+$('preset-add-btn').addEventListener('click', addPreset);
+$('preset-add-input').addEventListener('keydown', e => { if (e.key==='Enter') addPreset(); });
+
+function addPreset() {
+  const val = $('preset-add-input').value.trim();
+  if (!val) return;
+  if (S.sectionPresets.includes(val)) { showToast('すでに登録されています'); return; }
+  S.sectionPresets.push(val);
+  if (S.currentUser) saveUserPresets(S.currentUser, S.sectionPresets);
+  $('preset-add-input').value = '';
+  renderPresetList();
+  renderTable();
+  showToast('追加: ' + val);
+}
+
+function renderPresetList() {
+  const list = $('preset-list');
+  list.innerHTML = '';
+  S.sectionPresets.forEach((p, i) => {
+    const tag = document.createElement('div');
+    tag.className = 'preset-tag';
+    tag.innerHTML = `<span>${esc(p)}</span><button class="ptag-del" title="削除">✕</button>`;
+    tag.querySelector('.ptag-del').addEventListener('click', () => {
+      S.sectionPresets.splice(i, 1);
+      if (S.currentUser) saveUserPresets(S.currentUser, S.sectionPresets);
+      renderPresetList();
+      renderTable();
+    });
+    list.appendChild(tag);
+  });
+  if (S.sectionPresets.length === 0) {
+    list.innerHTML = '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim)">登録なし</span>';
+  }
+}
+
+// ════════════════════════════════════════════
+//  KEY CONFIG
+// ════════════════════════════════════════════
+
+// デフォルトキーマップ
+const DEFAULT_KEYMAP = { cue: 'Space', play: 'KeyP', tap: 'KeyT' };
+let KM = loadKeymap();
+
+function loadKeymap() {
+  try {
+    const saved = localStorage.getItem('stagelog_keymap');
+    if (saved) return { ...DEFAULT_KEYMAP, ...JSON.parse(saved) };
+  } catch(e){}
+  return { ...DEFAULT_KEYMAP };
+}
+function saveKeymap() {
+  try { localStorage.setItem('stagelog_keymap', JSON.stringify(KM)); } catch(e){}
+}
+
+// KeyboardEvent.code → 表示文字列
+function codeToLabel(code) {
+  if (!code) return '---';
+  if (code === 'Space') return 'Space';
+  if (code.startsWith('Key')) return code.slice(3);         // KeyA → A
+  if (code.startsWith('Digit')) return code.slice(5);       // Digit1 → 1
+  if (code.startsWith('Numpad')) return 'Num'+code.slice(6);
+  if (code.startsWith('F') && code.length<=3) return code;  // F1〜F12
+  const map = {
+    'Enter':'Enter','Escape':'Esc','Tab':'Tab','Backspace':'BS',
+    'Delete':'Del','Insert':'Ins','Home':'Home','End':'End',
+    'PageUp':'PgUp','PageDown':'PgDn',
+    'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→',
+    'BracketLeft':'[','BracketRight':']','Backslash':'\\',
+    'Semicolon':';','Quote':"'",'Comma':',','Period':'.','Slash':'/',
+    'Minus':'-','Equal':'=','Backquote':'`',
+  };
+  return map[code] || code;
+}
+
+function updateHints() {
+  $('hint-cue').textContent  = codeToLabel(KM.cue)  || '---';
+  $('hint-play').textContent = codeToLabel(KM.play) || '---';
+  $('hint-tap').textContent  = codeToLabel(KM.tap)  || '---';
+}
+
+function updateBindUI() {
+  ['cue','play','tap'].forEach(action => {
+    const el = $('kbind-'+action);
+    if (!el) return;
+    el.textContent = codeToLabel(KM[action]) || '未割り当て';
+    el.classList.toggle('conflict', false);
+  });
+  // 重複チェック
+  const actions = ['cue','play','tap'];
+  actions.forEach(a => {
+    if (!KM[a]) return;
+    const dup = actions.filter(b => b!==a && KM[b]===KM[a]);
+    if (dup.length) $('kbind-'+a).classList.add('conflict');
+  });
+  updateHints();
+}
+
+// キー設定モーダル
+$('btn-keyconfig').addEventListener('click', () => {
+  updateBindUI();
+  $('modal-keyconfig').classList.remove('hidden');
+});
+$('keyconfig-close').addEventListener('click', () => {
+  stopListening();
+  $('modal-keyconfig').classList.add('hidden');
+});
+
+let _listeningAction = null;
+
+document.querySelectorAll('.keymap-bind').forEach(el => {
+  el.addEventListener('click', () => {
+    const action = el.dataset.action;
+    if (_listeningAction === action) { stopListening(); return; }
+    stopListening();
+    _listeningAction = action;
+    el.classList.add('listening');
+    el.textContent = '← キーを押す';
+  });
+});
+
+document.querySelectorAll('.keymap-clear').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.clear;
+    stopListening();
+    KM[action] = null;
+    saveKeymap();
+    updateBindUI();
+    showToast(`${action.toUpperCase()} キーをクリアしました`);
+  });
+});
+
+function stopListening() {
+  if (_listeningAction) {
+    const el = $('kbind-'+_listeningAction);
+    if (el) el.classList.remove('listening');
+    _listeningAction = null;
+  }
+}
+
+// キー設定モーダルが開いている間はキーをキャプチャしてバインド
+document.addEventListener('keydown', e => {
+  // キー設定リスニング中
+  if (_listeningAction) {
+    e.preventDefault(); e.stopPropagation();
+    // Escapeはキャンセル
+    if (e.code === 'Escape') { stopListening(); updateBindUI(); return; }
+    KM[_listeningAction] = e.code;
+    saveKeymap();
+    stopListening();
+    updateBindUI();
+    showToast(`${_listeningAction.toUpperCase()}: ${codeToLabel(e.code)} に割り当てました`);
+    return;
+  }
+
+  // 通常動作
+  if (!$('app').classList.contains('visible')) return;
+  // モーダルが開いている間は通常キーを無視
+  if (!$('modal-keyconfig').classList.contains('hidden')) return;
+  if (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+
+  if (KM.cue  && e.code===KM.cue)  { e.preventDefault(); recordCue(); }
+  if (KM.play && e.code===KM.play) { e.preventDefault(); togglePlay(); }
+  if (KM.tap  && e.code===KM.tap)  { e.preventDefault(); if (S.bpmMode==='tap') tapBPM(); }
+});
+
+// 起動時にヒント更新
+updateHints();
+
+// ════════════════════════════════════════════
+//  TOUCH BAR
+// ════════════════════════════════════════════
+(function() {
+  const isTouch = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+  function showTouchBar() {
+    $('touch-bar').classList.remove('hidden');
+    $('touch-tab').classList.add('hidden');
+    $('app').classList.add('touch-open');
+  }
+  function hideTouchBar() {
+    $('touch-bar').classList.add('hidden');
+    $('touch-tab').classList.remove('hidden');
+    $('app').classList.remove('touch-open');
+  }
+
+  // 折りたたみトグル
+  $('touch-toggle').addEventListener('click', hideTouchBar);
+  $('touch-toggle-mini').addEventListener('click', showTouchBar);
+
+  // タッチデバイスなら自動表示（PCでは非表示）
+  if (isTouch()) showTouchBar();
+  else { $('touch-bar').classList.add('hidden'); $('touch-tab').classList.add('hidden'); }
+
+  // ── PLAY/STOP ──
+  function touchPlayHandler(e) {
+    if (e.type === 'touchstart') e.preventDefault();
+    togglePlay();
+    syncTouchPlayState();
+  }
+  $('touch-play').addEventListener('touchstart', touchPlayHandler, { passive: false });
+  $('touch-play').addEventListener('click',      touchPlayHandler);
+
+  // ── CUE（touchstartで最速反応）──
+  function touchCueHandler(e) {
+    if (e.type === 'touchstart') e.preventDefault();
+    recordCue();
+  }
+  $('touch-cue').addEventListener('touchstart', touchCueHandler, { passive: false });
+  $('touch-cue').addEventListener('click',      touchCueHandler);
+
+  // ── TAP TEMPO ──
+  function touchTapHandler(e) {
+    if (e.type === 'touchstart') e.preventDefault();
+    tapBPM();
+  }
+  $('touch-tap').addEventListener('touchstart', touchTapHandler, { passive: false });
+  $('touch-tap').addEventListener('click',      touchTapHandler);
+
+  // PLAY状態をタッチボタンに反映
+  window.syncTouchPlayState = function() {
+    const btn  = $('touch-play');
+    const icon = $('touch-play-icon');
+    const lbl  = btn.querySelector('.touch-label');
+    if (S.isPlaying) {
+      btn.classList.add('is-playing');
+      icon.textContent = '⏸'; lbl.textContent = 'PAUSE';
+    } else {
+      btn.classList.remove('is-playing');
+      icon.textContent = '▶'; lbl.textContent = 'PLAY';
+    }
+  };
+
+  // TAPモード時のみTAPボタンを表示
+  window.syncTouchTap = function() {
+    if (S.bpmMode === 'tap') $('touch-tap').classList.remove('hidden');
+    else                     $('touch-tap').classList.add('hidden');
+  };
+
+  // トラック選択後にタッチバーを再表示（PCで折りたたんでいた場合も）
+  window.syncTouchBarOnTrack = function() {
+    if (isTouch()) showTouchBar();
+    syncTouchTap();
+  };
+})();
+
+// BPMモード変更後にTAPボタン連動（既存のsetBpmModeをラップ）
+const _setBpmMode = setBpmMode;
+setBpmMode = function(mode) {
+  _setBpmMode(mode);
+  if (window.syncTouchTap) syncTouchTap();
+};
+
+// togglePlay/stopAudio後にタッチボタンを更新
+const _togglePlay = togglePlay;
+togglePlay = function() {
+  _togglePlay();
+  if (window.syncTouchPlayState) syncTouchPlayState();
+};
+const _stopAudio = stopAudio;
+stopAudio = function() {
+  _stopAudio();
+  if (window.syncTouchPlayState) syncTouchPlayState();
+};
+
+// selectTrack後にタッチバー同期
+const _selectTrack = selectTrack;
+selectTrack = function(id) {
+  _selectTrack(id);
+  if (window.syncTouchBarOnTrack) syncTouchBarOnTrack();
+};
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+function fmt(sec, centesimal=false) {
+  if (isNaN(sec) || sec === null) return '0:00';
+  const m  = Math.floor(sec / 60);
+  const s  = Math.floor(sec % 60);
+  if (centesimal) {
+    const cs = Math.floor((sec % 1) * 100);
+    return `${m}:${String(s).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+  }
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function csvQ(s){s=String(s||'');return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`:`${s}`;}
+function safeName(s){return s.replace(/[\\/:*?"<>|]/g,'_')||'stagelog';}
+function downloadBlob(blob,fname){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u);}
+function flashRed(id){const el=$(id);el.style.borderColor='var(--red)';setTimeout(()=>el.style.borderColor='',1500);}
+let _tt=null;
+function showToast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  if(_tt)clearTimeout(_tt);
+  _tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+setTimeout(resizeCanvas,120);
+</script>
+</body>
+</html>
